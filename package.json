@@ -1,0 +1,42 @@
+{
+  "name": "saas-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@stripe/stripe-js": "^9.1.0",
+    "@supabase/supabase-js": "^2.103.0",
+    "@tanstack/react-query": "^5.74.11",
+    "axios": "^1.9.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.511.0",
+    "next": "^16.2.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-hook-form": "^7.56.4",
+    "recharts": "^2.15.3",
+    "stripe": "^22.0.1",
+    "tailwind-merge": "^3.3.0",
+    "zod": "^3.24.3",
+    "zustand": "^5.0.5",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "eslint": "^9.24.0",
+    "eslint-config-next": "16.0.0",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3",
+    "@types/bcryptjs": "^2.4.6"
+  }
+}
