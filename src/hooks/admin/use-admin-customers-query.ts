@@ -1,17 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { adminCustomersService, AdminCustomersParams } from "@/services/admin/adminCustomersService";
+import { AdminCustomer } from "@/types/admin/customer";
 
 export function useAdminCustomersQuery(params?: AdminCustomersParams) {
-  return useQuery({
+  return useQuery<AdminCustomer[]>({
     queryKey: ["admin", "customers", params ?? {}],
-    queryFn: () => adminCustomersService.getCustomers(params)
-  });
-}
-
-export function useAdminCustomerDetailQuery(customerId: string) {
-  return useQuery({
-    queryKey: ["admin", "customers", customerId],
-    queryFn: () => adminCustomersService.getCustomerById(customerId),
-    enabled: Boolean(customerId)
+    queryFn: () => adminCustomersService.getCustomers(params),
   });
 }

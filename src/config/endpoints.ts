@@ -28,8 +28,11 @@ export const API_ENDPOINTS = {
   admin: {
     overview: "/admin/overview",
     customers: "/admin/customers",
-    customerDetail: (customerId: string) => `/admin/customers/${customerId}`
+    customerDetail: (customerId: string) => `/admin/customers/${customerId}`,
+    plans: "/admin/plans",
+    planDetail: (planId: string) => `/admin/plans/${planId}`,
+    subscriptions: "/admin/subscriptions",
+    subscriptionAction: (subscriptionId: string) => `/admin/subscriptions/${subscriptionId}`,
+    billing: "/admin/billing",
   }
 } as const;
-
-// TODO: Align these placeholders with backend endpoint contracts.

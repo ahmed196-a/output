@@ -1,31 +1,20 @@
-export type CustomerSubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
-
 export type AdminCustomer = {
   id: string;
-  companyName: string;
-  contactEmail: string;
-  status: "active" | "inactive" | "flagged";
-  subscriptionStatus: CustomerSubscriptionStatus;
-  monthlyUsageMinutes: number;
-  assignedAgents: number;
-  openInvoices: number;
-  lastActivityAt: string;
-};
-
-export type CustomerActivity = {
-  id: string;
-  type: "call" | "billing" | "agent" | "support";
-  description: string;
-  occurredAt: string;
-};
-
-export type AdminCustomerDetail = {
-  customer: AdminCustomer;
-  usageSummary: {
-    callsThisMonth: number;
-    minutesThisMonth: number;
-    failedCalls: number;
-  };
-  assignedAgents: string[];
-  recentActivity: CustomerActivity[];
+  fullName: string;
+  email: string;
+  role: "owner" | "member";
+  isActive: boolean;
+  tenantId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subscription: {
+    id: string;
+    status: string;
+    planName: string;
+    minutesUsed: number;
+    totalMinutes: number;
+    monthlyPrice: number;
+    startedAt: string;
+    endsAt: string | null;
+  } | null;
 };

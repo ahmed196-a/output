@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+
+// GET /api/admin/plans — list all plans
+export async function GET() {
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("plans")
+      .select("*")
+      .order("monthly_price", { ascending: true });
+
+    if (error) throw error;
+    return NextResponse.json(data ?? []);
+  } catch (err) {
+    console.error("[GET /api/admin/plans]", err);
+    return NextResponse.json({ error: "Failed to fetch plans." }, { status: 500 });
+  }
+}
+
+// POST /api/admin/plans — create a new plan
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = createServerSupabaseClient();
+    const body = await req.json();
+
+    const { data, error } = await supabase
+      .from("plans")
+      .insert({
+        name: body.name,
+        display_name: body.display_name,
+        monthly_price: body.monthly_price,
+        total_minutes: body.total_minutes,
+        price_per_minute: body.price_per_minute,
+        description: body.description ?? null,
+        is_active: body.is_active ?? true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/admin/plans]", err);
+    return NextResponse.json({ error: "Failed to create plan." }, { status: 500 });
+  }
+}

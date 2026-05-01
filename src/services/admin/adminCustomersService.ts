@@ -1,32 +1,19 @@
-import { adminCustomerDetailsMock, adminCustomersMock } from "@/config/mock/admin";
-import { API_ENDPOINTS } from "@/config/endpoints";
-import { apiClient } from "@/lib/api-client";
-import { requestWithFallback } from "@/lib/request";
-import { AdminCustomer, AdminCustomerDetail } from "@/types/admin/customer";
-import { PaginationParams } from "@/types/common";
+import { AdminCustomer } from "@/types/admin/customer";
 
-export type AdminCustomersParams = PaginationParams & {
+export type AdminCustomersParams = {
   search?: string;
-  status?: AdminCustomer["status"] | "all";
+  status?: "all" | "active" | "inactive";
 };
 
 export const adminCustomersService = {
   async getCustomers(params?: AdminCustomersParams): Promise<AdminCustomer[]> {
-    return requestWithFallback<AdminCustomer[]>({
-      request: async () => {
-        const response = await apiClient.get<AdminCustomer[]>(API_ENDPOINTS.admin.customers, { params });
-        return response.data;
-      },
-      fallback: () => adminCustomersMock
-    });
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.status && params.status !== "all") searchParams.set("status", params.status);
+
+    const qs = searchParams.toString();
+    const res = await fetch(`/api/admin/customers${qs ? `?${qs}` : ""}`);
+    if (!res.ok) throw new Error("Failed to fetch customers.");
+    return res.json();
   },
-  async getCustomerById(customerId: string): Promise<AdminCustomerDetail | null> {
-    return requestWithFallback<AdminCustomerDetail | null>({
-      request: async () => {
-        const response = await apiClient.get<AdminCustomerDetail>(API_ENDPOINTS.admin.customerDetail(customerId));
-        return response.data;
-      },
-      fallback: () => adminCustomerDetailsMock[customerId] ?? null
-    });
-  }
 };

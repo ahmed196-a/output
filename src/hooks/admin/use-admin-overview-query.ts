@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { adminOverviewService } from "@/services/admin/adminOverviewService";
+import { adminOverviewService, AdminOverviewData } from "@/services/admin/adminOverviewService";
 
 export function useAdminOverviewQuery() {
-  return useQuery({
+  return useQuery<AdminOverviewData>({
     queryKey: ["admin", "overview"],
-    queryFn: adminOverviewService.getOverview
+    queryFn: adminOverviewService.getOverview,
   });
 }

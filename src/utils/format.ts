@@ -13,3 +13,11 @@ export function formatDateTime(isoDate: string): string {
     minute: "2-digit"
   });
 }
+
+export function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleString("en-IE", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}

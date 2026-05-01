@@ -1,17 +1,27 @@
-import { adminOverviewMock } from "@/config/mock/admin";
-import { API_ENDPOINTS } from "@/config/endpoints";
-import { apiClient } from "@/lib/api-client";
-import { requestWithFallback } from "@/lib/request";
-import { AdminOverviewData } from "@/types/admin/overview";
+export type AdminOverviewMetrics = {
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalMinutesUsed: number;
+  totalRevenue: string;
+};
+
+export type AdminRecentSignup = {
+  id: string;
+  fullName: string;
+  email: string;
+  createdAt: string;
+  plan: string;
+};
+
+export type AdminOverviewData = {
+  metrics: AdminOverviewMetrics;
+  recentSignups: AdminRecentSignup[];
+};
 
 export const adminOverviewService = {
   async getOverview(): Promise<AdminOverviewData> {
-    return requestWithFallback<AdminOverviewData>({
-      request: async () => {
-        const response = await apiClient.get<AdminOverviewData>(API_ENDPOINTS.admin.overview);
-        return response.data;
-      },
-      fallback: () => adminOverviewMock
-    });
-  }
+    const res = await fetch("/api/admin/overview");
+    if (!res.ok) throw new Error("Failed to fetch overview.");
+    return res.json();
+  },
 };

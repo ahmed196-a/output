@@ -10,27 +10,13 @@ export const adminRoleLabels: Record<AdminRole, string> = {
 export type AdminNavPermission =
   | "overview"
   | "customers"
-  | "agents"
-  | "call_monitoring"
-  | "recordings"
-  | "billing"
-  | "operations"
-  | "support_tools"
-  | "settings";
+  | "plans"
+  | "subscriptions"
+  | "billing";
 
 export const rolePermissions: Record<AdminRole, AdminNavPermission[]> = {
-  super_admin: [
-    "overview",
-    "customers",
-    "agents",
-    "call_monitoring",
-    "recordings",
-    "billing",
-    "operations",
-    "support_tools",
-    "settings"
-  ],
-  operations: ["overview", "customers", "agents", "call_monitoring", "recordings", "operations"],
-  support: ["overview", "customers", "call_monitoring", "recordings", "support_tools"],
-  finance: ["overview", "customers", "billing", "settings"]
+  super_admin: ["overview", "customers", "plans", "subscriptions", "billing"],
+  operations:  ["overview", "customers", "subscriptions"],
+  support:     ["overview", "customers"],
+  finance:     ["overview", "customers", "billing", "plans", "subscriptions"]
 };
