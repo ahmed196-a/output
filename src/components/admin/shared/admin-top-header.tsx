@@ -61,13 +61,13 @@ export function AdminTopHeader({ title }: AdminTopHeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 rounded-lg border bg-slate-50 px-3 py-2 md:flex">
+        {/* <div className="hidden items-center gap-2 rounded-lg border bg-slate-50 px-3 py-2 md:flex">
           <Search className="h-4 w-4 text-slate-500" />
           <span className="text-sm text-slate-500">Search platform data</span>
-        </div>
-        <button className="rounded-md border p-2 text-slate-600">
+        </div> */}
+        {/* <button className="rounded-md border p-2 text-slate-600">
           <Bell className="h-4 w-4" />
-        </button>
+        </button> */}
         <div className="hidden flex-col items-end md:flex">
           <span className="text-xs font-medium text-slate-900">
             {user?.fullName ?? user?.email}

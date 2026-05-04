@@ -16,7 +16,7 @@ type ConfirmAction = { id: string; action: SubscriptionAction; userName: string 
 
 function statusVariant(status: string) {
   if (status === "active") return "success";
-  if (status === "canceled") return "danger";
+  if (status === "cancelled") return "danger";
   if (status === "past_due") return "warning";
   return "neutral";
 }
@@ -30,7 +30,7 @@ export function AdminSubscriptionsShell() {
   const { data: subscriptions = [], isLoading, error } = useAdminSubscriptionsQuery();
   const action = useSubscriptionAction();
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
-  const [filter, setFilter] = useState<"all" | "active" | "canceled">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "cancelled">("all");
 
   const filtered = subscriptions.filter((s) =>
     filter === "all" ? true : s.status === filter
@@ -52,7 +52,7 @@ export function AdminSubscriptionsShell() {
 
         {/* Filter tabs */}
         <div className="flex gap-2">
-          {(["all", "active", "canceled"] as const).map((f) => (
+          {(["all", "active", "cancelled"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -139,7 +139,7 @@ export function AdminSubscriptionsShell() {
                               </button>
                             </>
                           )}
-                          {sub.status === "canceled" && (
+                          {sub.status === "cancelled" && (
                             <button
                               title="Resume"
                               onClick={() => setConfirm({ id: sub.id, action: "resume", userName: sub.userFullName })}

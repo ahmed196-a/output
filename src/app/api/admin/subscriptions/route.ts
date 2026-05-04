@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const supabase = createServerSupabaseClient();
 
-    // Step 1: fetch subscriptions with plan info
+    // Step 1: fetch subscriptions (no join — avoids FK requirement)
     const { data: subs, error: subsError } = await supabase
       .from("subscriptions")
       .select(`
@@ -19,12 +19,7 @@ export async function GET() {
         minutes_used,
         monthly_price_snapshot,
         price_per_minute_snapshot,
-        total_minutes_snapshot,
-        plans (
-          id,
-          display_name,
-          name
-        )
+        total_minutes_snapshot
       `)
       .order("started_at", { ascending: false });
 
@@ -54,9 +49,27 @@ export async function GET() {
       usersMap[u.id] = u;
     });
 
-    // Step 3: merge
+    // Step 3: fetch plan info for all plan_ids in one query
+    const planIds = [...new Set(subs.map((s: any) => s.plan_id).filter(Boolean))];
+    const { data: plans, error: plansError } = await supabase
+      .from("plans")
+      .select("id, display_name, name")
+      .in("id", planIds);
+
+    if (plansError) {
+      console.error("[subscriptions] plans query error:", plansError);
+      throw plansError;
+    }
+
+    const plansMap: Record<string, any> = {};
+    (plans ?? []).forEach((p: any) => {
+      plansMap[p.id] = p;
+    });
+
+    // Step 4: merge everything
     const rows = subs.map((row: any) => {
       const user = usersMap[row.user_id] ?? {};
+      const plan = plansMap[row.plan_id] ?? {};
       return {
         id: row.id,
         status: row.status,
@@ -70,7 +83,7 @@ export async function GET() {
         userFullName: user.full_name ?? "—",
         userEmail: user.email ?? "—",
         userId: row.user_id,
-        planDisplayName: row.plans?.display_name ?? "—",
+        planDisplayName: plan.display_name ?? "—",
         planId: row.plan_id,
       };
     });

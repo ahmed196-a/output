@@ -71,7 +71,7 @@ export function RecentCallLogsTable({ rows }: RecentCallLogsTableProps) {
           label: "Cost",
           render: (value) =>
             value !== null && value !== undefined
-              ? <span className="font-mono text-slate-700">${Number(value).toFixed(4)}</span>
+              ? <span className="font-mono text-slate-700">${Number(value).toFixed(2)}</span>
               : <span className="text-slate-400">—</span>,
         },
       ]}

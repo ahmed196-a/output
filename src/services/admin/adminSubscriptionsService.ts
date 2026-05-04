@@ -1,6 +1,6 @@
 export type AdminSubscription = {
   id: string;
-  status: "active" | "canceled" | "past_due" | "trialing";
+  status: "active" | "cancelled" | "past_due" | "trialing";
   startedAt: string;
   endsAt: string | null;
   cancelledAt: string | null;
