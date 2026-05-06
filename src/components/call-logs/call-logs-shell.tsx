@@ -12,10 +12,14 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { useCallLogsQuery } from "@/hooks/use-call-logs-query";
 import { CallLog, CallStatus } from "@/types/call-log";
 import { formatDuration } from "@/utils/format";
+// import dayjs from "dayjs";
 
 const PAGE_SIZE = 10;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+// function formatDateSafe2(value) {
+//   return dayjs(value, "DD/MM/YYYY HH:mm:ss").format("DD MMM YYYY, HH:mm");
+// }
 
 function getStatusVariant(status: CallStatus) {
   if (status === "passed") return "success" as const;
@@ -25,9 +29,26 @@ function getStatusVariant(status: CallStatus) {
 
 function formatDateSafe(raw: string | null | undefined): string {
   if (!raw) return "—";
+
   const ts = Number(raw);
-  const d = isNaN(ts) ? new Date(raw) : new Date(ts);
+
+  let d: Date;
+
+  if (!isNaN(ts)) {
+    d = new Date(ts);
+  } else if (raw.includes("/")) {
+    // 👉 Handle DD/MM/YYYY manually
+    const [datePart, timePart] = raw.split(",").map(s => s.trim());
+    const [day, month, year] = datePart.split("/");
+
+    const iso = `${year}-${month}-${day}T${timePart || "00:00:00"}`;
+    d = new Date(iso);
+  } else {
+    d = new Date(raw);
+  }
+
   if (isNaN(d.getTime())) return "—";
+
   return d.toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -36,7 +57,6 @@ function formatDateSafe(raw: string | null | undefined): string {
     minute: "2-digit",
   });
 }
-
 function toDateStr(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");

@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       disconnection_reason, created_at,
       agents:agent_id (id, name)
     `, { count: "exact" })
-    .order("start_timestamp", { ascending: false, nullsFirst: false })
+    .order("start_timestamp", { ascending: true, nullsFirst: false })
     .range(offset, offset + limit - 1);
 
   if (allowedAgentIds !== null) {
