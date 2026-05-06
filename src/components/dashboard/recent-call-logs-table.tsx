@@ -5,14 +5,35 @@ import { formatDuration } from "@/utils/format";
 
 function formatDateSafe(raw: string | null | undefined): string {
   if (!raw) return "—";
+
   const ts = Number(raw);
-  const d = isNaN(ts) ? new Date(raw) : new Date(ts);
+
+  let d: Date;
+
+  if (!isNaN(ts)) {
+    d = new Date(ts);
+  } else if (raw.includes("/")) {
+    // 👉 Handle DD/MM/YYYY manually
+    const [datePart, timePart] = raw.split(",").map(s => s.trim());
+    const [day, month, year] = datePart.split("/");
+
+    const iso = `${year}-${month}-${day}T${timePart || "00:00:00"}`;
+    d = new Date(iso);
+  } else {
+    d = new Date(raw);
+  }
+
   if (isNaN(d.getTime())) return "—";
+
   return d.toLocaleString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
+
 
 function getStatusVariant(status: CallStatus) {
   if (status === "passed") return "success" as const;
@@ -29,9 +50,30 @@ export function RecentCallLogsTable({ rows }: RecentCallLogsTableProps) {
     return <p className="text-sm text-slate-400">No recent call logs.</p>;
   }
 
+  // ✅ Sort ascending by startedAt
+  const sortedRows = [...rows].sort((a, b) => {
+    const getTime = (val: string | null | undefined) => {
+      if (!val) return 0;
+
+      const ts = Number(val);
+
+      if (!isNaN(ts)) return ts;
+
+      if (val.includes("/")) {
+        const [datePart, timePart] = val.split(",").map(s => s.trim());
+        const [day, month, year] = datePart.split("/");
+        return new Date(`${year}-${month}-${day}T${timePart || "00:00:00"}`).getTime();
+      }
+
+      return new Date(val).getTime();
+    };
+
+    return getTime(a.startedAt) - getTime(b.startedAt); // ascending
+  });
+
   return (
     <DataTable
-      rows={rows}
+      rows={sortedRows} // 👈 use sorted rows
       columns={[
         {
           key: "startedAt",
@@ -39,6 +81,7 @@ export function RecentCallLogsTable({ rows }: RecentCallLogsTableProps) {
           render: (value) => (
             <span className="whitespace-nowrap text-slate-700">
               {formatDateSafe(String(value))}
+              
             </span>
           ),
         },
