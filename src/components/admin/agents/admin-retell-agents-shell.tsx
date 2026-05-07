@@ -169,7 +169,7 @@ function CreateAgentModal({ onClose }: { onClose: () => void }) {
                         checked={checked}
                         onChange={() => toggle(u.id)}
                       />
-                      <span className="text-sm text-slate-700">{u.full_name}</span>
+                      <span className="text-sm text-slate-700">{u.fullName}</span>
                       <span className="ml-auto text-xs text-slate-400">{u.email}</span>
                     </label>
                   );
@@ -305,7 +305,7 @@ function AccessModal({ agent, onClose }: { agent: RetellAgent; onClose: () => vo
                 return (
                   <div key={u.id} className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{u.full_name}</p>
+                      <p className="text-sm font-medium text-slate-800">{u.fullName}</p>
                       <p className="text-xs text-slate-400">{u.email} · {u.role}</p>
                     </div>
                     <button

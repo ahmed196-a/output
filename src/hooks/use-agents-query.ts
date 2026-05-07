@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { agentsService } from "@/services/agents-service";
+import { Agent } from "@/types/agent";
 
 export function useAgentsQuery() {
-  return useQuery({
+  return useQuery<Agent[]>({
     queryKey: queryKeys.agents,
-    queryFn: agentsService.getAgents
+    queryFn: () => agentsService.getAgents()
   });
 }
 

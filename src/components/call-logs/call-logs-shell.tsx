@@ -196,7 +196,7 @@ function AudioPlayer({ url }: { url: string }) {
 // ── CallDetailDrawer ──────────────────────────────────────────────────────────
 
 function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void }) {
-  const sentiment = getSentimentDisplay(log.customerSentiment);
+  const sentiment = getSentimentDisplay(log.customerSentiment ?? null);
   const transcriptSnippet = log.transcript
     ? log.transcript.slice(0, 500) + (log.transcript.length > 500 ? "…" : "")
     : null;

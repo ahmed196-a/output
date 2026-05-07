@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   for (const row of rows) {
     if (!row.agent_id) continue;
-    const agentInfo = row.agents as { id: string; name: string; retell_agent_id: string } | null;
+    const agentInfo = (Array.isArray(row.agents) ? row.agents[0] : row.agents) as { id: string; name: string; retell_agent_id: string } | null;
     if (!agentInfo) continue;
 
     if (!agentMap.has(row.agent_id)) {

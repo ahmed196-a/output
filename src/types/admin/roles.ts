@@ -16,7 +16,7 @@ export type AdminNavPermission =
 
 export const rolePermissions: Record<AdminRole, AdminNavPermission[]> = {
   super_admin: ["overview", "customers", "plans", "subscriptions", "billing"],
-  operations:  ["overview", "customers", "subscriptions"],
-  support:     ["overview", "customers"],
-  finance:     ["overview", "customers", "billing", "plans", "subscriptions"]
+  operations: ["overview", "customers", "subscriptions"],
+  support: ["overview", "customers"],
+  finance: ["overview", "customers", "billing", "plans", "subscriptions"]
 };

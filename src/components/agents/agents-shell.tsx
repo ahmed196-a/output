@@ -20,7 +20,8 @@ import { getAgentStatusVariant } from "@/utils/status";
 const PAGE_SIZE = 4;
 
 export function AgentsShell() {
-  const { data: agents = [], isLoading, error } = useAgentsQuery();
+  const { data, isLoading, error } = useAgentsQuery();
+  const agents = (data as Agent[] | undefined) ?? [];
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Agent["status"]>("all");
   const [page, setPage] = useState(1);

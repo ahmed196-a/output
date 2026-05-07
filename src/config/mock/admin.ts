@@ -1,4 +1,4 @@
-import { AdminCustomer, AdminCustomerDetail } from "@/types/admin/customer";
+import { AdminCustomerMock, AdminCustomerDetail } from "@/types/admin/customer";
 import { AdminOverviewData } from "@/types/admin/overview";
 
 export const adminOverviewMock: AdminOverviewData = {
@@ -27,7 +27,7 @@ export const adminOverviewMock: AdminOverviewData = {
   ]
 };
 
-export const adminCustomersMock: AdminCustomer[] = [
+export const adminCustomersMock: AdminCustomerMock[] = [
   {
     id: "cust_001",
     companyName: "Northwind Logistics",

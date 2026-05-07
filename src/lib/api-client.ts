@@ -15,7 +15,7 @@ apiClient.interceptors.request.use((config) => {
   nextConfig.headers = {
     ...nextConfig.headers,
     [env.tenantHeaderKey]: env.tenantId
-  };
+  } as typeof nextConfig.headers;
 
   if (typeof window !== "undefined") {
     const token = window.localStorage.getItem(env.authTokenStorageKey);

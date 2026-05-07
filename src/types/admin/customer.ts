@@ -18,3 +18,32 @@ export type AdminCustomer = {
     endsAt: string | null;
   } | null;
 };
+
+/** Shape used by mock data and customer detail views */
+export type AdminCustomerMock = {
+  id: string;
+  companyName: string;
+  contactEmail: string;
+  status: string;
+  subscriptionStatus: string;
+  monthlyUsageMinutes: number;
+  assignedAgents: number;
+  openInvoices: number;
+  lastActivityAt: string;
+};
+
+export type AdminCustomerDetail = {
+  customer: AdminCustomerMock;
+  usageSummary: {
+    callsThisMonth: number;
+    minutesThisMonth: number;
+    failedCalls: number;
+  };
+  assignedAgents: string[];
+  recentActivity: {
+    id: string;
+    type: string;
+    description: string;
+    occurredAt: string;
+  }[];
+};
