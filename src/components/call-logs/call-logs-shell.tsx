@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { useCallLogsQuery } from "@/hooks/use-call-logs-query";
 import { CallLog, CallStatus } from "@/types/call-log";
 import { formatDuration } from "@/utils/format";
+import { formatToUserTimezone, parseDateSafe } from "@/utils/timezone";
 // import dayjs from "dayjs";
 
 const PAGE_SIZE = 10;
@@ -27,36 +28,36 @@ function getStatusVariant(status: CallStatus) {
   return "warning" as const;
 }
 
-function formatDateSafe(raw: string | null | undefined): string {
-  if (!raw) return "—";
+// function formatDateSafe(raw: string | null | undefined): string {
+//   if (!raw) return "—";
 
-  const ts = Number(raw);
+//   const ts = Number(raw);
 
-  let d: Date;
+//   let d: Date;
 
-  if (!isNaN(ts)) {
-    d = new Date(ts);
-  } else if (raw.includes("/")) {
-    // 👉 Handle DD/MM/YYYY manually
-    const [datePart, timePart] = raw.split(",").map(s => s.trim());
-    const [day, month, year] = datePart.split("/");
+//   if (!isNaN(ts)) {
+//     d = new Date(ts);
+//   } else if (raw.includes("/")) {
+//     // 👉 Handle DD/MM/YYYY manually
+//     const [datePart, timePart] = raw.split(",").map(s => s.trim());
+//     const [day, month, year] = datePart.split("/");
 
-    const iso = `${year}-${month}-${day}T${timePart || "00:00:00"}`;
-    d = new Date(iso);
-  } else {
-    d = new Date(raw);
-  }
+//     const iso = `${year}-${month}-${day}T${timePart || "00:00:00"}`;
+//     d = new Date(iso);
+//   } else {
+//     d = new Date(raw);
+//   }
 
-  if (isNaN(d.getTime())) return "—";
+//   if (isNaN(d.getTime())) return "—";
 
-  return d.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+//   return d.toLocaleString("en-GB", {
+//     day: "2-digit",
+//     month: "short",
+//     year: "numeric",
+//     hour: "2-digit",
+//     minute: "2-digit",
+//   });
+// }
 function toDateStr(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -199,10 +200,11 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
   const transcriptSnippet = log.transcript
     ? log.transcript.slice(0, 500) + (log.transcript.length > 500 ? "…" : "")
     : null;
-
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const metaItems: { label: string; value?: string | null; badge?: CallStatus }[] = [
+    //  { label: "Your Timezone", value: userTimezone },
     { label: "Call ID", value: log.callId },
-    { label: "Date / Time", value: formatDateSafe(log.startedAt) },
+    { label: "Date / Time", value: parseDateSafe(log.startedAt) },
     { label: "From (Customer)", value: log.fromNumber },
     { label: "Agent ID", value: log.toNumber },
     { label: "Duration", value: formatDuration(log.durationSeconds) },
@@ -344,6 +346,7 @@ export function CallLogsShell() {
         title="Call Logs / CDR"
         description="Complete call history with filters, searchable CDR fields, and call detail drawer."
       />
+      
 
       {/* Filter Bar */}
       <div className="rounded-2xl bg-white p-4" style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}>
@@ -442,7 +445,7 @@ export function CallLogsShell() {
               key: "startedAt",
               label: "Date / Time",
               render: (value) => (
-                <span className="whitespace-nowrap text-slate-700">{formatDateSafe(String(value))}</span>
+                <span className="whitespace-nowrap text-slate-700">{parseDateSafe(String(value))}</span>
               ),
             },
             {
