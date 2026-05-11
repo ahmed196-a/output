@@ -41,8 +41,42 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
 
+    // --- Usage via user_assistant_assignments + call_logs ---
+
+    // 1. Fetch assistant assignments for all fetched users
+    const userIds = (data ?? []).map((u: any) => u.id);
+    const { data: assignments } = await supabase
+      .from("user_assistant_assignments")
+      .select("user_id, assistant_id")
+      .in("user_id", userIds);
+
+    // 2. Build map: user_id -> assistant_id
+    const assignmentMap: Record<string, string> = {};
+    (assignments ?? []).forEach((a: any) => {
+      assignmentMap[a.user_id] = a.assistant_id;
+    });
+
+    // 3. Fetch total duration per retell_agent_id from call_logs
+    const assistantIds = Object.values(assignmentMap);
+    const usageMap: Record<string, number> = {};
+    if (assistantIds.length > 0) {
+      const { data: usageRows } = await supabase
+        .from("cdrs")
+        .select("assistant_id, total_seconds")
+        .in("assistant_id", assistantIds);
+
+      (usageRows ?? []).forEach((row: any) => {
+        const aid = row.assistant_id;
+        usageMap[aid] = (usageMap[aid] ?? 0) + (row.total_seconds ?? 0);
+      });
+    }
+
+    // --- Build response rows ---
     let rows = (data ?? []).map((u: any) => {
       const sub = u.subscriptions;
+      const assignedAgentId = assignmentMap[u.id] ?? null;
+      const usageSeconds = assignedAgentId ? (usageMap[assignedAgentId] ?? 0) : 0;
+
       return {
         id: u.id,
         fullName: u.full_name,
@@ -52,6 +86,7 @@ export async function GET(req: NextRequest) {
         tenantId: u.tenant_id,
         createdAt: u.created_at,
         updatedAt: u.updated_at,
+        usageMinutes: Math.round(usageSeconds / 60),
         subscription: sub
           ? {
               id: sub.id,

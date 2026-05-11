@@ -33,8 +33,38 @@ export async function GET() {
 
     if (error) throw error;
 
+    // Fetch assistant assignments for all users
+    const userIds = (data ?? []).map((u: any) => u.id);
+    const { data: assignments } = await supabase
+      .from("user_assistant_assignments")
+      .select("user_id, assistant_id")
+      .in("user_id", userIds);
+
+    const assignmentMap: Record<string, string> = {};
+    (assignments ?? []).forEach((a: any) => {
+      assignmentMap[a.user_id] = a.assistant_id;
+    });
+
+    // Fetch usage from call_logs per assistant
+    const assistantIds = Object.values(assignmentMap);
+    const usageMap: Record<string, number> = {};
+    if (assistantIds.length > 0) {
+      const { data: usageRows } = await supabase
+        .from("cdrs")
+        .select("assistant_id, total_seconds")
+        .in("assistant_id", assistantIds);
+
+      (usageRows ?? []).forEach((row: any) => {
+        const aid = row.assistant_id;
+        usageMap[aid] = (usageMap[aid] ?? 0) + (row.total_seconds ?? 0);
+      });
+    }
+
     const rows = (data ?? []).map((u: any) => {
       const sub = u.subscriptions;
+      const assignedAgentId = assignmentMap[u.id] ?? null;
+      const usageSeconds = assignedAgentId ? (usageMap[assignedAgentId] ?? 0) : 0;
+
       return {
         userId: u.id,
         fullName: u.full_name,
@@ -42,6 +72,7 @@ export async function GET() {
         role: u.role,
         isActive: u.is_active,
         createdAt: u.created_at,
+        usageMinutes: Math.round(usageSeconds / 60),
         subscription: sub
           ? {
               id: sub.id,

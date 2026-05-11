@@ -9,7 +9,6 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useAdminCustomersQuery } from "@/hooks/admin/use-admin-customers-query";
-import { AdminCustomer } from "@/types/admin/customer";
 import { formatDateTime } from "@/utils/format";
 import { Search } from "lucide-react";
 
@@ -26,7 +25,9 @@ function minutesBar(used: number, total: number) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs text-slate-500 whitespace-nowrap">{used}/{total}</span>
+      <span className="text-xs text-slate-500 whitespace-nowrap">
+        {used}/{total}
+      </span>
     </div>
   );
 }
@@ -35,7 +36,11 @@ export function AdminCustomersShell() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const { data: customers = [], isLoading, error } = useAdminCustomersQuery({
+  const {
+    data: customers = [],
+    isLoading,
+    error,
+  } = useAdminCustomersQuery({
     search: query || undefined,
     status: statusFilter,
   });
@@ -51,14 +56,12 @@ export function AdminCustomersShell() {
         statusFilter === "all"
           ? true
           : statusFilter === "active"
-          ? c.isActive
-          : !c.isActive;
+            ? c.isActive
+            : !c.isActive;
       return match && statusMatch;
     });
   }, [customers, query, statusFilter]);
 
-  // DataTable expects rows with an `id` field — customers already have that.
-  // We need to re-shape to flat rows for DataTable.
   const tableRows = filteredRows.map((c) => ({
     id: c.id,
     fullName: c.fullName,
@@ -69,7 +72,10 @@ export function AdminCustomersShell() {
     subStatus: c.subscription?.status ?? "—",
     minutesUsed: c.subscription?.minutesUsed ?? null,
     totalMinutes: c.subscription?.totalMinutes ?? null,
-    monthlyPrice: c.subscription ? `$${c.subscription.monthlyPrice.toFixed(2)}` : "—",
+    monthlyPrice: c.subscription
+      ? `$${c.subscription.monthlyPrice.toFixed(2)}`
+      : "—",
+    usageMinutes: c.usageMinutes ?? 0,
     createdAt: c.createdAt,
   }));
 
@@ -108,7 +114,10 @@ export function AdminCustomersShell() {
         ) : error ? (
           <ErrorState message="Customers could not be loaded." />
         ) : tableRows.length === 0 ? (
-          <EmptyState title="No customers found" message="Try changing filters or search query." />
+          <EmptyState
+            title="No customers found"
+            message="Try changing filters or search query."
+          />
         ) : (
           <DataTable
             rows={tableRows}
@@ -117,7 +126,9 @@ export function AdminCustomersShell() {
                 key: "fullName",
                 label: "Name",
                 render: (v) => (
-                  <span className="font-medium text-slate-900">{String(v)}</span>
+                  <span className="font-medium text-slate-900">
+                    {String(v)}
+                  </span>
                 ),
               },
               { key: "email", label: "Email" },
@@ -134,7 +145,10 @@ export function AdminCustomersShell() {
                 key: "isActive",
                 label: "Account",
                 render: (v) => (
-                  <StatusBadge text={v ? "Active" : "Inactive"} variant={v ? "success" : "neutral"} />
+                  <StatusBadge
+                    text={v ? "Active" : "Inactive"}
+                    variant={v ? "success" : "neutral"}
+                  />
                 ),
               },
               { key: "plan", label: "Plan" },
@@ -143,22 +157,62 @@ export function AdminCustomersShell() {
                 label: "Subscription",
                 render: (v) => {
                   const val = String(v);
-                  if (val === "—") return <span className="text-slate-400">—</span>;
+                  if (val === "—")
+                    return <span className="text-slate-400">—</span>;
                   return (
                     <StatusBadge
                       text={val}
-                      variant={val === "active" ? "success" : val === "canceled" ? "danger" : val === "past_due" ? "warning" : "neutral"}
+                      variant={
+                        val === "active"
+                          ? "success"
+                          : val === "canceled"
+                            ? "danger"
+                            : val === "past_due"
+                              ? "warning"
+                              : "neutral"
+                      }
                     />
                   );
                 },
               },
+              // {
+              //   key: "usageMinutes",
+              //   label: "Plan Usage",
+              //   render: (v, row) =>
+              //     v != null && row.totalMinutes
+              //       ? minutesBar(v as number, row.totalMinutes as number)
+              //       : <span className="text-slate-400">—</span>,
+              // },
+              // {
+              //   key: "usageMinutes",
+              //   label: "CDR Usage",
+              //   render: (v) => (
+              //     <span className="text-sm text-slate-700">{v as number} min</span>
+              //   ),
+              // },
               {
-                key: "minutesUsed",
-                label: "Usage",
-                render: (v, row) =>
-                  v != null && row.totalMinutes
-                    ? minutesBar(v as number, row.totalMinutes as number)
-                    : <span className="text-slate-400">—</span>,
+                key: "usageMinutes",
+                label: "Usage (CDR / Plan)",
+                render: (v, row) => {
+                  const used = v as number;
+                  const total = row.totalMinutes as number;
+
+                  return (
+                    <div className="flex items-center gap-3">
+                      {/* Bar */}
+                      {total ? (
+                        minutesBar(used, total)
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+
+                      {/* Text */}
+                      {/* <span className="text-xs text-slate-500 whitespace-nowrap">
+                        {used} min used
+                      </span> */}
+                    </div>
+                  );
+                },
               },
               { key: "monthlyPrice", label: "Monthly" },
               {

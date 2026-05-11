@@ -26,7 +26,7 @@ function subStatusVariant(status: string) {
 
 function BillingCard({ user }: { user: AdminUserBilling }) {
   const sub = user.subscription;
-  const pct = sub ? minutesPercent(sub.minutesUsed, sub.totalMinutes) : 0;
+  const pct = sub ? minutesPercent(user.usageMinutes, sub.totalMinutes) : 0;
 
   return (
     <div
@@ -48,6 +48,12 @@ function BillingCard({ user }: { user: AdminUserBilling }) {
         />
       </div>
 
+      {/* CDR Usage — always shown */}
+      <div className="flex items-center justify-between rounded-xl bg-indigo-50 px-3 py-2">
+        <span className="text-xs font-medium text-indigo-600">CDR Usage (All-time)</span>
+        <span className="text-sm font-bold text-indigo-700">{user.usageMinutes} min</span>
+      </div>
+
       {sub ? (
         <>
           {/* Plan + subscription status */}
@@ -62,9 +68,9 @@ function BillingCard({ user }: { user: AdminUserBilling }) {
           {/* Minutes usage bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Minutes Used</span>
+              <span>Plan Minutes Used</span>
               <span>
-                {sub.minutesUsed.toFixed(1)} / {sub.totalMinutes} min ({pct}%)
+                {user.usageMinutes} / {sub.totalMinutes} min ({pct}%)
               </span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">

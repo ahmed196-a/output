@@ -8,11 +8,21 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { ErrorState } from "@/components/shared/error-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AdminPermissionGuard } from "@/components/admin/shared/admin-permission-guard";
-import { useAdminSubscriptionsQuery, useSubscriptionAction } from "@/hooks/admin/use-admin-subscriptions-query";
-import { AdminSubscription, SubscriptionAction } from "@/services/admin/adminSubscriptionsService";
+import {
+  useAdminSubscriptionsQuery,
+  useSubscriptionAction,
+} from "@/hooks/admin/use-admin-subscriptions-query";
+import {
+  AdminSubscription,
+  SubscriptionAction,
+} from "@/services/admin/adminSubscriptionsService";
 import { formatDate } from "@/utils/format";
 
-type ConfirmAction = { id: string; action: SubscriptionAction; userName: string };
+type ConfirmAction = {
+  id: string;
+  action: SubscriptionAction;
+  userName: string;
+};
 
 function statusVariant(status: string) {
   if (status === "active") return "success";
@@ -27,13 +37,17 @@ function minutesPercent(used: number, total: number) {
 }
 
 export function AdminSubscriptionsShell() {
-  const { data: subscriptions = [], isLoading, error } = useAdminSubscriptionsQuery();
+  const {
+    data: subscriptions = [],
+    isLoading,
+    error,
+  } = useAdminSubscriptionsQuery();
   const action = useSubscriptionAction();
   const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "cancelled">("all");
 
   const filtered = subscriptions.filter((s) =>
-    filter === "all" ? true : s.status === filter
+    filter === "all" ? true : s.status === filter,
   );
 
   async function handleConfirm() {
@@ -72,17 +86,42 @@ export function AdminSubscriptionsShell() {
         ) : error ? (
           <ErrorState message="Could not load subscriptions." />
         ) : filtered.length === 0 ? (
-          <EmptyState title="No subscriptions" message="No subscriptions match this filter." />
+          <EmptyState
+            title="No subscriptions"
+            message="No subscriptions match this filter."
+          />
         ) : (
           <div
             className="overflow-x-auto rounded-2xl bg-white"
-            style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            style={{
+              boxShadow: "var(--shadow-sm)",
+              border: "1px solid var(--border-light)",
+            }}
           >
             <table className="min-w-full text-left">
               <thead>
-                <tr style={{ background: "linear-gradient(90deg, #f5f3ff 0%, #eef2ff 100%)", borderBottom: "1px solid var(--border)" }}>
-                  {["Customer", "Plan", "Status", "Usage", "Monthly", "Started", "Actions"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#6366f1" }}>
+                <tr
+                  style={{
+                    background:
+                      "linear-gradient(90deg, #f5f3ff 0%, #eef2ff 100%)",
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                >
+                  {[
+                    "Customer",
+                    "Plan",
+                    "Status",
+                    "USAGE (CDR / Plan)",
+                    // "CDR Usage",
+                    "Monthly",
+                    "Started",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "#6366f1" }}
+                    >
                       {h}
                     </th>
                   ))}
@@ -94,17 +133,29 @@ export function AdminSubscriptionsShell() {
                   return (
                     <tr
                       key={sub.id}
-                      style={{ borderTop: "1px solid var(--border-light)", background: i % 2 === 1 ? "#fafbff" : "white" }}
+                      style={{
+                        borderTop: "1px solid var(--border-light)",
+                        background: i % 2 === 1 ? "#fafbff" : "white",
+                      }}
                     >
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-slate-800">{sub.userFullName}</p>
-                        <p className="text-xs text-slate-400">{sub.userEmail}</p>
+                        <p className="text-sm font-medium text-slate-800">
+                          {sub.userFullName}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {sub.userEmail}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">{sub.planDisplayName}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {sub.planDisplayName}
+                      </td>
                       <td className="px-4 py-3">
-                        <StatusBadge text={sub.status} variant={statusVariant(sub.status)} />
+                        <StatusBadge
+                          text={sub.status}
+                          variant={statusVariant(sub.status)}
+                        />
                       </td>
-                      <td className="px-4 py-3 min-w-[140px]">
+                      {/* <td className="px-4 py-3 min-w-[140px]">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                             <div
@@ -117,22 +168,79 @@ export function AdminSubscriptionsShell() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">${sub.monthlyPrice}</td>
-                      <td className="px-4 py-3 text-sm text-slate-500">{formatDate(sub.startedAt)}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {sub.usageMinutes} min
+                      </td> */}
+                      <td className="px-4 py-3 min-w-[180px]">
+                        <div className="space-y-1">
+                          {/* Top row: CDR usage + percent */}
+                          <div className="flex items-center justify-between text-xs text-slate-600">
+                            <span>{sub.usageMinutes} min (CDR)</span>
+                            <span>
+                              {sub.totalMinutes
+                                ? `${Math.round((sub.usageMinutes / sub.totalMinutes) * 100)}%`
+                                : "—"}
+                            </span>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-indigo-500 transition-all"
+                                style={{
+                                  width: sub.totalMinutes
+                                    ? `${Math.min(
+                                        100,
+                                        Math.round(
+                                          (sub.usageMinutes /
+                                            sub.totalMinutes) *
+                                            100,
+                                        ),
+                                      )}%`
+                                    : "0%",
+                                }}
+                              />
+                            </div>
+
+                            {/* <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                              {sub.minutesUsed}/{sub.totalMinutes}m
+                            </span> */}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        ${sub.monthlyPrice}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-500">
+                        {formatDate(sub.startedAt)}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {sub.status === "active" && (
                             <>
                               <button
                                 title="Pause (cancel)"
-                                onClick={() => setConfirm({ id: sub.id, action: "pause", userName: sub.userFullName })}
+                                onClick={() =>
+                                  setConfirm({
+                                    id: sub.id,
+                                    action: "pause",
+                                    userName: sub.userFullName,
+                                  })
+                                }
                                 className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
                               >
                                 <PauseCircle className="h-4 w-4" />
                               </button>
                               <button
                                 title="Terminate"
-                                onClick={() => setConfirm({ id: sub.id, action: "terminate", userName: sub.userFullName })}
+                                onClick={() =>
+                                  setConfirm({
+                                    id: sub.id,
+                                    action: "terminate",
+                                    userName: sub.userFullName,
+                                  })
+                                }
                                 className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
                               >
                                 <XCircle className="h-4 w-4" />
@@ -142,7 +250,13 @@ export function AdminSubscriptionsShell() {
                           {sub.status === "cancelled" && (
                             <button
                               title="Resume"
-                              onClick={() => setConfirm({ id: sub.id, action: "resume", userName: sub.userFullName })}
+                              onClick={() =>
+                                setConfirm({
+                                  id: sub.id,
+                                  action: "resume",
+                                  userName: sub.userFullName,
+                                })
+                              }
                               className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
                             >
                               <PlayCircle className="h-4 w-4" />
@@ -163,13 +277,15 @@ export function AdminSubscriptionsShell() {
       {confirm && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
-            <h3 className="text-base font-semibold text-slate-900 capitalize">{confirm.action} Subscription</h3>
+            <h3 className="text-base font-semibold text-slate-900 capitalize">
+              {confirm.action} Subscription
+            </h3>
             <p className="text-sm text-slate-500">
               {confirm.action === "terminate"
                 ? `This will permanently terminate ${confirm.userName}'s subscription. This cannot be undone.`
                 : confirm.action === "pause"
-                ? `This will cancel ${confirm.userName}'s subscription. You can resume it later.`
-                : `This will reactivate ${confirm.userName}'s subscription.`}
+                  ? `This will cancel ${confirm.userName}'s subscription. You can resume it later.`
+                  : `This will reactivate ${confirm.userName}'s subscription.`}
             </p>
             <div className="flex gap-3">
               <button
@@ -185,8 +301,8 @@ export function AdminSubscriptionsShell() {
                   confirm.action === "terminate"
                     ? "bg-rose-600 hover:bg-rose-700"
                     : confirm.action === "pause"
-                    ? "bg-amber-500 hover:bg-amber-600"
-                    : "bg-emerald-600 hover:bg-emerald-700"
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-emerald-600 hover:bg-emerald-700"
                 }`}
               >
                 {action.isPending ? "Processing…" : `Confirm ${confirm.action}`}

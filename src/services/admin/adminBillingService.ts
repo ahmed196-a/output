@@ -5,6 +5,7 @@ export type AdminUserBilling = {
   role: string;
   isActive: boolean;
   createdAt: string;
+  usageMinutes: number;
   subscription: {
     id: string;
     status: string;

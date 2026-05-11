@@ -7,6 +7,7 @@ export type AdminCustomer = {
   tenantId: string | null;
   createdAt: string;
   updatedAt: string;
+  usageMinutes: number;
   subscription: {
     id: string;
     status: string;

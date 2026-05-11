@@ -13,6 +13,7 @@ export type AdminSubscription = {
   userId: string;
   planDisplayName: string;
   planId: string;
+  usageMinutes: number;
 };
 
 export type SubscriptionAction = "pause" | "resume" | "terminate";
