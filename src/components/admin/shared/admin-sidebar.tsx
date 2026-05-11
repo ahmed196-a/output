@@ -10,6 +10,7 @@ import {
   Layers, 
   Receipt,
   ShieldCheck,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/admin/use-admin-role";
@@ -28,6 +29,7 @@ const adminNavItems: AdminNavItem[] = [
   { href: "/admin/plans",         label: "Plans",         icon: Layers,          permission: "plans" },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard,      permission: "subscriptions" },
   { href: "/admin/billing",       label: "Billing",       icon: Receipt,         permission: "billing" },
+  { href: "/admin/agents",        label: "Agent Access",  icon: Bot,             permission: "agents" },
 ];
 
 export function AdminSidebar() {

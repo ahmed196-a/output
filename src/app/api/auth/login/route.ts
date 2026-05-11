@@ -9,14 +9,6 @@ const JWT_SECRET = new TextEncoder().encode(
 
 const SESSION_HOURS = Number(process.env.NEXT_PUBLIC_AUTH_SESSION_DURATION_HOURS ?? 8);
 
-/**
- * POST /api/auth/login
- * Body: { email: string; password: string }
- *
- * 1. Looks up the user by email in the public.users table.
- * 2. Compares the submitted password against the stored bcrypt hash.
- * 3. Returns a signed JWT + user metadata on success.
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -76,7 +68,7 @@ export async function POST(req: NextRequest) {
       .setExpirationTime(`${SESSION_HOURS}h`)
       .sign(JWT_SECRET);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       accessToken,
       expiresAt,
       user: {
@@ -87,6 +79,16 @@ export async function POST(req: NextRequest) {
         tenantId: user.tenant_id ?? null,
       },
     });
+
+    response.cookies.set("token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_HOURS * 60 * 60,
+    });
+    
+    return response;
   } catch (err) {
     console.error("[/api/auth/login]", err);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });

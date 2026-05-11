@@ -2,7 +2,8 @@ import { jwtVerify } from "jose";
 import { NextRequest } from "next/server";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.AUTH_JWT_SECRET ?? "change-me-in-production-at-least-32-chars!!"
+  process.env.AUTH_JWT_SECRET ??
+    "change-me-in-production-at-least-32-chars!!"
 );
 
 export type JwtPayload = {
@@ -12,24 +13,47 @@ export type JwtPayload = {
   tenantId: string | null;
 };
 
-/**
- * Extracts and verifies the Bearer JWT from the Authorization header.
- * Returns null if missing or invalid.
- */
-export async function verifyRequestJwt(req: NextRequest): Promise<JwtPayload | null> {
-  const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return null;
-
+export async function verifyRequestJwt(
+  req: NextRequest
+): Promise<JwtPayload | null> {
   try {
+    let token: string | null = null;
+
+    // 1. Try Authorization header first
+    const authHeader = req.headers.get("authorization") ?? "";
+
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    }
+
+    // 2. Fallback to HttpOnly cookie
+    if (!token) {
+      token = req.cookies.get("token")?.value ?? null;
+    }
+
+    console.log("TOKEN:", token);
+
+    if (!token) {
+      console.log("No token found");
+      return null;
+    }
+
     const { payload } = await jwtVerify(token, JWT_SECRET);
+
+    console.log("JWT Payload:", payload);
+
     return payload as unknown as JwtPayload;
-  } catch {
+  } catch (err) {
+    console.error("JWT VERIFY ERROR:", err);
     return null;
   }
 }
 
-export function requireRole(payload: JwtPayload | null, roles: string[]): boolean {
+export function requireRole(
+  payload: JwtPayload | null,
+  roles: string[]
+): boolean {
   if (!payload) return false;
+
   return roles.includes(payload.role);
 }
