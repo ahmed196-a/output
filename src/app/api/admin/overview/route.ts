@@ -19,11 +19,11 @@ export async function GET() {
 
     // Total minutes used across all subscriptions
     const { data: minutesData } = await supabase
-      .from("subscriptions")
-      .select("minutes_used");
+      .from("cdrs")
+      .select("total_mins");
 
     const totalMinutesUsed = (minutesData ?? []).reduce(
-      (sum, row) => sum + parseFloat(row.minutes_used ?? "0"),
+      (sum, row) => sum + parseFloat(row.total_mins ?? "0"),
       0
     );
 
