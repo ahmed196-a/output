@@ -1,4 +1,3 @@
-import { invoiceSummaryMock } from "@/config/mock/dashboard";
 import { API_ENDPOINTS } from "@/config/endpoints";
 import { apiClient } from "@/lib/api-client";
 import { requestWithFallback } from "@/lib/request";
@@ -25,7 +24,7 @@ export const billingService = {
         currentPlan: "Growth",
         subscriptionStatus: "active",
         usageSummary: "28,904 minutes used this cycle",
-        invoices: invoiceSummaryMock
+        invoices: []
       })
     });
   },
@@ -35,7 +34,7 @@ export const billingService = {
         const response = await apiClient.get<Invoice[]>(API_ENDPOINTS.billing.invoices, { params });
         return response.data;
       },
-      fallback: () => invoiceSummaryMock
+      fallback: () => []
     });
   }
 };

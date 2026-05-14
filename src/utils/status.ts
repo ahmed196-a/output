@@ -4,7 +4,7 @@ import { CallStatus } from "@/types/call-log";
 import { StatusVariant } from "@/components/shared/status-badge";
 
 export function getCallStatusVariant(status: CallStatus): StatusVariant {
-  if (status === "answered") {
+  if (status === "passed") {
     return "success";
   }
   if (status === "failed") {

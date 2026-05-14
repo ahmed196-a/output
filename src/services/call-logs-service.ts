@@ -1,4 +1,3 @@
-import { callLogsMock } from "@/config/mock/call-logs";
 import { API_ENDPOINTS } from "@/config/endpoints";
 import { apiClient } from "@/lib/api-client";
 import { requestWithFallback } from "@/lib/request";
@@ -21,7 +20,7 @@ export const callLogsService = {
         const response = await apiClient.get<CallLog[]>(API_ENDPOINTS.callLogs.list, { params });
         return response.data;
       },
-      fallback: () => callLogsMock
+      fallback: () => []
     });
   },
  

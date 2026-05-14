@@ -1,4 +1,3 @@
-import { dashboardSummaryMock, invoiceSummaryMock, recentCallLogsMock, recentRecordingsMock } from "@/config/mock/dashboard";
 import { API_ENDPOINTS } from "@/config/endpoints";
 import { apiClient } from "@/lib/api-client";
 import { requestWithFallback } from "@/lib/request";
@@ -22,10 +21,14 @@ export const dashboardService = {
         return response.data;
       },
       fallback: () => ({
-        summary: dashboardSummaryMock,
-        recentCallLogs: recentCallLogsMock,
-        recentRecordings: recentRecordingsMock,
-        invoices: invoiceSummaryMock
+        summary: {
+          kpis: [],
+          trends: [],
+          agentPerformance: []
+        },
+        recentCallLogs: [],
+        recentRecordings: [],
+        invoices: []
       })
     });
   }

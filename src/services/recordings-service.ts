@@ -1,4 +1,3 @@
-import { recordingsMock } from "@/config/mock/recordings";
 import { API_ENDPOINTS } from "@/config/endpoints";
 import { apiClient } from "@/lib/api-client";
 import { requestWithFallback } from "@/lib/request";
@@ -18,7 +17,7 @@ export const recordingsService = {
         const response = await apiClient.get<Recording[]>(API_ENDPOINTS.recordings.list, { params });
         return response.data;
       },
-      fallback: () => recordingsMock
+      fallback: () => []
     });
   }
 };
