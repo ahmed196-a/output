@@ -1,10 +1,6 @@
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+// src/app/(dashboard)/billing/page.tsx
+import { BillingShell } from "@/components/billing/billing-shell";
 
 export default function BillingPage() {
-  return (
-    <PlaceholderPage
-      title="Billing"
-      description="Track plan details, usage, invoice status, and payment history. Stripe portal integration will be added in later phases."
-    />
-  );
+  return <BillingShell />;
 }
