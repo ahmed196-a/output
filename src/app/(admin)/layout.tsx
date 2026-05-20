@@ -7,7 +7,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-slate-50">
       <AdminSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <AdminTopHeader title="Internal Admin Panel" />
         <main className="flex-1 p-4 lg:p-6">{children}</main>
         <footer

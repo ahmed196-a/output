@@ -179,7 +179,7 @@ export function AdminPlansShell() {
               <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
             </div>
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Internal Name <span className="text-rose-500">*</span></label>
                   <input
@@ -202,7 +202,7 @@ export function AdminPlansShell() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Monthly Price ($)</label>
                   <input

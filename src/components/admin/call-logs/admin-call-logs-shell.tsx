@@ -221,7 +221,7 @@ export function AdminCallLogsShell() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-slate-500">
                 Page {page} of {totalPages}
               </p>

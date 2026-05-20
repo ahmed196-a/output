@@ -50,9 +50,9 @@ export function AdminUsersShell() {
   };
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex flex-col gap-6 lg:flex-row lg:h-full">
       {/* User list */}
-      <div className="w-80 shrink-0">
+      <div className="w-full lg:w-80 lg:shrink-0">
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
           Registered Users
         </h2>

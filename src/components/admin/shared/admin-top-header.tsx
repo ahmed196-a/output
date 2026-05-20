@@ -42,6 +42,7 @@ import { adminRoleLabels } from "@/types/admin/roles";
 import { useAdminRole } from "@/hooks/admin/use-admin-role";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { useAuthStore } from "@/store/auth-store";
+import { useUIStore } from "@/store/ui-store";
 
 type AdminTopHeaderProps = {
   title: string;
@@ -50,11 +51,16 @@ type AdminTopHeaderProps = {
 export function AdminTopHeader({ title }: AdminTopHeaderProps) {
   const { role } = useAdminRole();
   const user = useAuthStore((s) => s.user);
+  const setAdminSidebarOpen = useUIStore((s) => s.setAdminSidebarOpen);
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white/95 px-4 backdrop-blur lg:px-6">
       <div className="flex items-center gap-3">
-        <button className="rounded-md border p-2 text-slate-600 lg:hidden">
+        <button
+          onClick={() => setAdminSidebarOpen(true)}
+          className="rounded-md border p-2 text-slate-600 lg:hidden cursor-pointer hover:bg-slate-50 transition-colors"
+          aria-label="Open admin sidebar"
+        >
           <Menu className="h-4 w-4" />
         </button>
         <h1 className="text-lg font-semibold text-slate-900">{title}</h1>

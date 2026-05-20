@@ -3,11 +3,13 @@
 import { Menu } from "lucide-react";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { useAuthStore } from "@/store/auth-store";
+import { useUIStore } from "@/store/ui-store";
 
 type TopHeaderProps = { title: string };
 
 export function TopHeader({ title }: TopHeaderProps) {
   const user = useAuthStore((s) => s.user);
+  const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const initials = user?.fullName
     ? user.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : user?.email?.slice(0, 2).toUpperCase() ?? "U";
@@ -24,7 +26,12 @@ export function TopHeader({ title }: TopHeaderProps) {
     >
       {/* Left */}
       <div className="flex items-center gap-3">
-        <button className="rounded-lg border p-2 text-slate-500 lg:hidden" style={{ borderColor: "var(--border)" }}>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="rounded-lg border p-2 text-slate-500 lg:hidden cursor-pointer hover:bg-slate-50 transition-colors"
+          style={{ borderColor: "var(--border)" }}
+          aria-label="Open sidebar"
+        >
           <Menu className="h-4 w-4" />
         </button>
         <h1

@@ -135,9 +135,9 @@ export function AdminAgentAccessShell() {
           description="Assign assistant IDs from CDR records to users/owners."
         />
 
-        <div className="flex gap-6 min-h-[600px]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:min-h-[600px]">
           {/* ── Left: User List ── */}
-          <div className="w-80 shrink-0 flex flex-col gap-3">
+          <div className="w-full lg:w-80 lg:shrink-0 flex flex-col gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
@@ -262,7 +262,7 @@ export function AdminAgentAccessShell() {
                   <h3 className="text-sm font-semibold text-slate-700">
                     {currentAssignment ? "Change Assignment" : "Assign Assistant ID"}
                   </h3>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <select
                       value={selectedAssistantId}
                       onChange={(e) => setSelectedAssistantId(e.target.value)}
@@ -302,7 +302,7 @@ export function AdminAgentAccessShell() {
                       {assignments.map((a) => {
                         const user = users.find((u) => u.id === a.user_id);
                         return (
-                          <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                          <div key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm gap-1">
                             <div>
                               <span className="font-medium text-slate-800">
                                 {user?.fullName || user?.email || a.user_id.slice(0, 8)}

@@ -9,7 +9,7 @@ type ChartCardProps = {
 export function ChartCard({ title, subtitle, children }: ChartCardProps) {
   return (
     <article
-      className="rounded-2xl bg-white px-5 pt-5 pb-4"
+      className="rounded-2xl bg-white px-5 pt-5 pb-4 overflow-hidden"
       style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
     >
       <div className="flex items-center gap-2 mb-1">

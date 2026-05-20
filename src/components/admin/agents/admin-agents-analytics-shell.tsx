@@ -80,7 +80,7 @@ export function AdminAgentsAnalyticsShell() {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Agents Analytics</h1>
           <p className="mt-1 text-sm text-slate-500">Real-time insights from Retell call data. Auto-refreshes every 30s.</p>

@@ -12,15 +12,11 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { useCallLogsQuery } from "@/hooks/use-call-logs-query";
 import { CallLog, CallStatus } from "@/types/call-log";
 import { formatDuration } from "@/utils/format";
-import { formatToUserTimezone, parseDateSafe } from "@/utils/timezone";
-// import dayjs from "dayjs";
+import { parseDateSafe } from "@/utils/timezone";
 
 const PAGE_SIZE = 10;
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-// function formatDateSafe2(value) {
-//   return dayjs(value, "DD/MM/YYYY HH:mm:ss").format("DD MMM YYYY, HH:mm");
-// }
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 function getStatusVariant(status: CallStatus) {
   if (status === "passed") return "success" as const;
@@ -28,41 +24,51 @@ function getStatusVariant(status: CallStatus) {
   return "warning" as const;
 }
 
-// function formatDateSafe(raw: string | null | undefined): string {
-//   if (!raw) return "—";
-
-//   const ts = Number(raw);
-
-//   let d: Date;
-
-//   if (!isNaN(ts)) {
-//     d = new Date(ts);
-//   } else if (raw.includes("/")) {
-//     // 👉 Handle DD/MM/YYYY manually
-//     const [datePart, timePart] = raw.split(",").map(s => s.trim());
-//     const [day, month, year] = datePart.split("/");
-
-//     const iso = `${year}-${month}-${day}T${timePart || "00:00:00"}`;
-//     d = new Date(iso);
-//   } else {
-//     d = new Date(raw);
-//   }
-
-//   if (isNaN(d.getTime())) return "—";
-
-//   return d.toLocaleString("en-GB", {
-//     day: "2-digit",
-//     month: "short",
-//     year: "numeric",
-//     hour: "2-digit",
-//     minute: "2-digit",
-//   });
-// }
 function toDateStr(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Robustly parse a raw startedAt value into a Date.
+ * Handles:
+ *  - Unix ms  (13-digit number string or number)
+ *  - Unix s   (10-digit number string or number)
+ *  - ISO 8601 strings
+ *  - "DD/MM/YYYY HH:mm:ss" strings
+ */
+function parseStartedAt(raw: string | number | null | undefined): Date | null {
+  if (raw === null || raw === undefined || raw === "") return null;
+
+  const ts = Number(raw);
+
+  if (!isNaN(ts) && String(raw).trim() !== "") {
+    // Distinguish seconds vs milliseconds by magnitude
+    // Timestamps > 1e12 are almost certainly milliseconds
+    const d = new Date(ts > 1e12 ? ts : ts * 1000);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  if (typeof raw === "string") {
+    // Try DD/MM/YYYY [HH:mm:ss] format
+    const ddmmMatch = raw.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}:\d{2}(?::\d{2})?))?/
+    );
+    if (ddmmMatch) {
+      const [, dd, mm, yyyy, time] = ddmmMatch;
+      const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${time ?? "00:00:00"}`;
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    // Fallback: native Date parse (handles ISO 8601, RFC 2822, etc.)
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return null;
 }
 
 function getPresetRange(preset: string): { from: string; to: string } {
@@ -152,12 +158,12 @@ function AudioPlayer({ url }: { url: string }) {
         >
           {playing ? (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <rect x="1" y="1" width="4" height="10" rx="1"/>
-              <rect x="7" y="1" width="4" height="10" rx="1"/>
+              <rect x="1" y="1" width="4" height="10" rx="1" />
+              <rect x="7" y="1" width="4" height="10" rx="1" />
             </svg>
           ) : (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M2 1.5l9 4.5-9 4.5z"/>
+              <path d="M2 1.5l9 4.5-9 4.5z" />
             </svg>
           )}
         </button>
@@ -179,17 +185,19 @@ function AudioPlayer({ url }: { url: string }) {
             <span>{fmtTime(duration)}</span>
           </div>
         </div>
-        <a
-          href={url} download target="_blank" rel="noreferrer"
-          title="Download MP3"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition"
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M6.5 1.5v7M3.5 6l3 3 3-3M1.5 11.5h10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </a>
+
+        href={url}
+        download
+        target="_blank"
+        rel="noreferrer"
+        title="Download MP3"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition"
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M6.5 1.5v7M3.5 6l3 3 3-3M1.5 11.5h10" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -200,9 +208,8 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
   const transcriptSnippet = log.transcript
     ? log.transcript.slice(0, 500) + (log.transcript.length > 500 ? "…" : "")
     : null;
-  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const metaItems: { label: string; value?: string | null; badge?: CallStatus }[] = [
-    //  { label: "Your Timezone", value: userTimezone },
     { label: "Call ID", value: log.callId },
     { label: "Date / Time", value: parseDateSafe(log.startedAt) },
     { label: "From (Customer)", value: log.fromNumber },
@@ -216,9 +223,7 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
   return (
     <ModalDrawerShell title="Call Details" open={true} onClose={onClose}>
       <div className="space-y-6 pb-4 text-sm">
-
-        {/* Meta grid */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {metaItems.map(({ label, value, badge }) => (
             <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
@@ -234,7 +239,6 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
           ))}
         </div>
 
-        {/* Recording */}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Recording</p>
           {log.recordingUrl ? (
@@ -246,7 +250,6 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
           )}
         </div>
 
-        {/* Sentiment Analysis */}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Sentiment Analysis</p>
           <div className="space-y-3">
@@ -262,21 +265,18 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
                 </span>
               )}
               {log.isSuccessful !== null && (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  log.isSuccessful ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                }`}>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${log.isSuccessful ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                  }`}>
                   {log.isSuccessful ? "✓ Successful" : "✗ Unsuccessful"}
                 </span>
               )}
             </div>
-
             {log.callInfo && (
               <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-400">Call Summary</p>
                 <p className="text-xs leading-relaxed text-blue-800">{log.callInfo}</p>
               </div>
             )}
-
             {transcriptSnippet && (
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Transcript Preview</p>
@@ -285,13 +285,14 @@ function CallDetailDrawer({ log, onClose }: { log: CallLog; onClose: () => void 
             )}
           </div>
         </div>
-
       </div>
     </ModalDrawerShell>
   );
 }
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
+
+type SortOrder = "newest" | "oldest";
 
 export function CallLogsShell() {
   const { data: callLogs = [], isLoading, error } = useCallLogsQuery();
@@ -301,6 +302,7 @@ export function CallLogsShell() {
   const [datePreset, setDatePreset] = useState("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<CallLog | null>(null);
 
@@ -311,26 +313,43 @@ export function CallLogsShell() {
   }, [datePreset, customFrom, customTo]);
 
   const filteredLogs = useMemo(() => {
-    return callLogs.filter((log) => {
+    const filtered = callLogs.filter((log) => {
+      // ── search ──
       const q = query.trim().toLowerCase();
-      const queryMatch = !q || log.fromNumber.toLowerCase().includes(q) || log.toNumber.toLowerCase().includes(q);
+      const queryMatch =
+        !q ||
+        log.fromNumber.toLowerCase().includes(q) ||
+        log.toNumber.toLowerCase().includes(q);
+
+      // ── status ──
       const statusMatch = statusFilter === "all" || log.status === statusFilter;
 
+      // ── date ──
       let dateMatch = true;
       if (effectiveDateRange.from || effectiveDateRange.to) {
-        const raw = log.startedAt;
-        const ts = Number(raw);
-        const d = !isNaN(ts) && raw !== "" ? new Date(ts) : new Date(raw);
-        if (!isNaN(d.getTime())) {
-          const logDate = toDateStr(d);
+        const parsed = parseStartedAt(log.startedAt);
+        if (parsed) {
+          const logDate = toDateStr(parsed);
           if (effectiveDateRange.from && logDate < effectiveDateRange.from) dateMatch = false;
           if (effectiveDateRange.to && logDate > effectiveDateRange.to) dateMatch = false;
+        } else {
+          // Unparseable date — exclude when a date filter is active
+          dateMatch = false;
         }
       }
 
       return queryMatch && statusMatch && dateMatch;
     });
-  }, [callLogs, query, statusFilter, effectiveDateRange]);
+
+    // ── sort ──
+    filtered.sort((a, b) => {
+      const da = parseStartedAt(a.startedAt)?.getTime() ?? 0;
+      const db = parseStartedAt(b.startedAt)?.getTime() ?? 0;
+      return sortOrder === "newest" ? db - da : da - db;
+    });
+
+    return filtered;
+  }, [callLogs, query, statusFilter, effectiveDateRange, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
   const pagedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -346,7 +365,6 @@ export function CallLogsShell() {
         title="Call Logs / CDR"
         description="Complete call history with filters, searchable CDR fields, and call detail drawer."
       />
-      
 
       {/* Filter Bar */}
       <div className="rounded-2xl bg-white p-4" style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}>
@@ -355,8 +373,8 @@ export function CallLogsShell() {
           {/* Search */}
           <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border bg-slate-50 px-3 py-2">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-slate-400">
-              <circle cx="6" cy="6" r="4.5"/>
-              <path d="M9.5 9.5l3 3" strokeLinecap="round"/>
+              <circle cx="6" cy="6" r="4.5" />
+              <path d="M9.5 9.5l3 3" strokeLinecap="round" />
             </svg>
             <input
               value={query}
@@ -367,7 +385,7 @@ export function CallLogsShell() {
             {query && (
               <button type="button" onClick={() => { resetPage(); setQuery(""); }} className="text-slate-400 hover:text-slate-700">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 1l10 10M11 1L1 11" strokeLinecap="round"/>
+                  <path d="M1 1l10 10M11 1L1 11" strokeLinecap="round" />
                 </svg>
               </button>
             )}
@@ -377,7 +395,8 @@ export function CallLogsShell() {
           <select
             value={statusFilter}
             onChange={(e) => { resetPage(); setStatusFilter(e.target.value as "all" | CallStatus); }}
-            className="rounded-xl px-3 py-2 text-sm font-medium cursor-pointer" style={{ border: "1px solid var(--border)", color: "#374151", background: "#f5f3ff" }}
+            className="rounded-xl px-3 py-2 text-sm font-medium cursor-pointer"
+            style={{ border: "1px solid var(--border)", color: "#374151", background: "#f5f3ff" }}
           >
             <option value="all">All Statuses</option>
             <option value="passed">Passed</option>
@@ -389,7 +408,8 @@ export function CallLogsShell() {
           <select
             value={datePreset}
             onChange={(e) => { resetPage(); setDatePreset(e.target.value); }}
-            className="rounded-xl px-3 py-2 text-sm font-medium cursor-pointer" style={{ border: "1px solid var(--border)", color: "#374151", background: "#f5f3ff" }}
+            className="rounded-xl px-3 py-2 text-sm font-medium cursor-pointer"
+            style={{ border: "1px solid var(--border)", color: "#374151", background: "#f5f3ff" }}
           >
             <option value="all">All Dates</option>
             <option value="today">Today</option>
@@ -401,9 +421,20 @@ export function CallLogsShell() {
             <option value="custom">Custom Range…</option>
           </select>
 
+          {/* Sort order */}
+          <select
+            value={sortOrder}
+            onChange={(e) => { resetPage(); setSortOrder(e.target.value as SortOrder); }}
+            className="rounded-xl px-3 py-2 text-sm font-medium cursor-pointer"
+            style={{ border: "1px solid var(--border)", color: "#374151", background: "#f5f3ff" }}
+          >
+            <option value="newest">↓ Newest First</option>
+            <option value="oldest">↑ Oldest First</option>
+          </select>
+
           {/* Custom range pickers */}
           {datePreset === "custom" && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="date" value={customFrom}
                 onChange={(e) => { resetPage(); setCustomFrom(e.target.value); }}
@@ -422,13 +453,14 @@ export function CallLogsShell() {
           {effectiveDateRange.from && (
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="1" y="2" width="8" height="7" rx="1"/>
-                <path d="M3 1v2M7 1v2M1 5h8" strokeLinecap="round"/>
+                <rect x="1" y="2" width="8" height="7" rx="1" />
+                <path d="M3 1v2M7 1v2M1 5h8" strokeLinecap="round" />
               </svg>
               {effectiveDateRange.from} → {effectiveDateRange.to || "today"}
             </span>
           )}
         </div>
+
         <p className="mt-2 text-xs text-slate-400">
           {filteredLogs.length} record{filteredLogs.length !== 1 ? "s" : ""} found
         </p>
@@ -487,7 +519,8 @@ export function CallLogsShell() {
                 <button
                   type="button"
                   onClick={() => setSelectedLog(row)}
-                  className="rounded-lg px-3 py-1 text-xs font-semibold text-white transition active:scale-95" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  className="rounded-lg px-3 py-1 text-xs font-semibold text-white transition active:scale-95"
+                  style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
                 >
                   View Details
                 </button>
