@@ -9,6 +9,8 @@ import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useAdminCustomerDetailQuery } from "@/hooks/admin/use-admin-customers-query";
 import { formatDateTime } from "@/utils/format";
+import { AdminCustomerChangePassword } from "@/components/admin/customers/admin-customer-change-password";
+
 
 type AdminCustomerDetailShellProps = {
   customerId: string;
@@ -84,6 +86,7 @@ export function AdminCustomerDetailShell({ customerId }: AdminCustomerDetailShel
               ))}
             </div>
           </section>
+          
         </div>
       )}
     </AdminPermissionGuard>
