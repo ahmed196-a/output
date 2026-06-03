@@ -1,3 +1,5 @@
+// src/config/endpoints.ts
+// FULL REPLACEMENT — adds billing.renewSession and billing.renewConfirm
 export const API_ENDPOINTS = {
   auth: {
     login: "/auth/login",
@@ -20,10 +22,16 @@ export const API_ENDPOINTS = {
   },
   billing: {
     summary: "/billing/summary",
-    invoices: "/billing/invoices"
+    invoices: "/billing/invoices",
+    subscription: "/billing/subscription",
+    renewSession: "/billing/renew",
+    renewConfirm: "/billing/renew/confirm",
   },
   settings: {
     account: "/settings/account"
+  },
+  plans: {
+    list: "/plans",
   },
   admin: {
     overview: "/admin/overview",

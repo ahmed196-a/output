@@ -31,16 +31,11 @@ export async function verifyRequestJwt(
       token = req.cookies.get("token")?.value ?? null;
     }
 
-    console.log("TOKEN:", token);
-
     if (!token) {
-      console.log("No token found");
       return null;
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET);
-
-    console.log("JWT Payload:", payload);
 
     return payload as unknown as JwtPayload;
   } catch (err) {

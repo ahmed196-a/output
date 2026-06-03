@@ -6,8 +6,9 @@ import { verifyRequestJwt, requireRole } from "@/lib/jwt-auth";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params;
   const payload = await verifyRequestJwt(req);
   if (!payload || !requireRole(payload, ["admin", "superadmin"])) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,7 +30,7 @@ export async function POST(
   const { error } = await supabase
     .from("users")
     .update({ password_hash: newHash, updated_at: new Date().toISOString() })
-    .eq("id", params.userId);
+    .eq("id", userId);
 
   if (error) {
     return NextResponse.json({ error: "Failed to update password." }, { status: 500 });

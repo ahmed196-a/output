@@ -8,8 +8,11 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { ErrorState } from "@/components/shared/error-state";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SubscriptionExpiryBanner } from "@/components/billing/subscription-expiry-banner";
+import { RenewalModal } from "@/components/billing/renewal-modal";
+import { useRenewal } from "@/hooks/use-renewal";
 import { formatDate } from "@/utils/format";
-import { CreditCard, Clock, Calendar, Zap } from "lucide-react";
+import { CreditCard, Clock, Calendar, Zap, RefreshCw } from "lucide-react";
 
 type SubscriptionData = {
   subscription: {
@@ -67,6 +70,11 @@ export function BillingShell() {
     },
   });
 
+  const renewal = useRenewal();
+
+  // Derive current plan name (lowercase) for the modal to highlight
+  const currentPlanName = data?.subscription?.planName?.toLowerCase();
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -84,116 +92,149 @@ export function BillingShell() {
           message="You don't have an active subscription. Contact your administrator."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {/* Plan Card */}
-          <div
-            className="rounded-2xl bg-white p-5 space-y-3"
-            style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
-          >
-            <div className="flex items-center gap-2 text-indigo-600">
-              <CreditCard className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Plan</span>
-            </div>
-            <p className="text-xl font-bold text-slate-900">{data.subscription.planName}</p>
-            <p className="text-sm text-slate-500">
-              ${data.subscription.monthlyPrice.toFixed(2)} / month
-            </p>
-            <StatusBadge
-              text={data.subscription.status}
-              variant={statusVariant(data.subscription.status)}
-            />
-          </div>
+        <>
+          {/* ── Expiry / renewal banner (shown 3 days before or when expired) ── */}
+          <SubscriptionExpiryBanner
+            status={data.subscription.status}
+            endsAt={data.subscription.endsAt}
+            onRenew={renewal.open}
+          />
 
-          {/* Usage Card */}
-          <div
-            className="rounded-2xl bg-white p-5 space-y-3 sm:col-span-2"
-            style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
-          >
-            <div className="flex items-center gap-2 text-indigo-600">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Minutes Usage</span>
-            </div>
-            <UsageBar
-              used={data.usageMinutes}
-              total={data.subscription.totalMinutes}
-            />
-            {data.subscription.pricePerMinute > 0 && (
-              <p className="text-xs text-slate-400">
-                ${data.subscription.pricePerMinute.toFixed(4)} / min overage rate
+          {/* ── Subscription cards ── */}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Plan Card */}
+            <div
+              className="rounded-2xl bg-white p-5 space-y-3"
+              style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            >
+              <div className="flex items-center gap-2 text-indigo-600">
+                <CreditCard className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Plan</span>
+              </div>
+              <p className="text-xl font-bold text-slate-900">{data.subscription.planName}</p>
+              <p className="text-sm text-slate-500">
+                ${data.subscription.monthlyPrice.toFixed(2)} / month
               </p>
-            )}
-          </div>
+              <StatusBadge
+                text={data.subscription.status}
+                variant={statusVariant(data.subscription.status)}
+              />
 
-          {/* Dates Card */}
-          <div
-            className="rounded-2xl bg-white p-5 space-y-3"
-            style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
-          >
-            <div className="flex items-center gap-2 text-indigo-600">
-              <Calendar className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Dates</span>
+              {/* Renew button always available on plan card */}
+              <button
+                onClick={renewal.open}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700"
+                style={{ borderColor: "var(--border-light)", color: "var(--muted-text)" }}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Renew / Change Plan
+              </button>
             </div>
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-slate-400">Started</p>
-                <p className="text-sm font-medium text-slate-700">
-                  {formatDate(data.subscription.startedAt)}
-                </p>
+
+            {/* Usage Card */}
+            <div
+              className="rounded-2xl bg-white p-5 space-y-3 sm:col-span-2"
+              style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            >
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Minutes Usage</span>
               </div>
-              {data.subscription.endsAt && (
+              <UsageBar
+                used={data.usageMinutes}
+                total={data.subscription.totalMinutes}
+              />
+              {data.subscription.pricePerMinute > 0 && (
+                <p className="text-xs text-slate-400">
+                  ${data.subscription.pricePerMinute.toFixed(4)} / min overage rate
+                </p>
+              )}
+            </div>
+
+            {/* Dates Card */}
+            <div
+              className="rounded-2xl bg-white p-5 space-y-3"
+              style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            >
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Calendar className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Dates</span>
+              </div>
+              <div className="space-y-2">
                 <div>
-                  <p className="text-xs text-slate-400">Renews / Ends</p>
+                  <p className="text-xs text-slate-400">Started</p>
                   <p className="text-sm font-medium text-slate-700">
-                    {formatDate(data.subscription.endsAt)}
+                    {formatDate(data.subscription.startedAt)}
                   </p>
                 </div>
-              )}
-              {data.subscription.cancelledAt && (
-                <div>
-                  <p className="text-xs text-slate-400">Cancelled</p>
-                  <p className="text-sm font-medium text-rose-600">
-                    {formatDate(data.subscription.cancelledAt)}
-                  </p>
-                </div>
-              )}
+                {data.subscription.endsAt && (
+                  <div>
+                    <p className="text-xs text-slate-400">Renews / Ends</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {formatDate(data.subscription.endsAt)}
+                    </p>
+                  </div>
+                )}
+                {data.subscription.cancelledAt && (
+                  <div>
+                    <p className="text-xs text-slate-400">Cancelled</p>
+                    <p className="text-sm font-medium text-rose-600">
+                      {formatDate(data.subscription.cancelledAt)}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Full-width detail row */}
-          <div
-            className="rounded-2xl bg-white p-5 sm:col-span-2 xl:col-span-4"
-            style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
-          >
-            <div className="flex items-center gap-2 text-indigo-600 mb-4">
-              <Zap className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">Summary</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 text-sm">
-              <div>
-                <p className="text-xs text-slate-400">Plan</p>
-                <p className="font-medium text-slate-800">{data.subscription.planName}</p>
+            {/* Full-width summary row */}
+            <div
+              className="rounded-2xl bg-white p-5 sm:col-span-2 xl:col-span-4"
+              style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            >
+              <div className="flex items-center gap-2 text-indigo-600 mb-4">
+                <Zap className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Summary</span>
               </div>
-              <div>
-                <p className="text-xs text-slate-400">Status</p>
-                <StatusBadge
-                  text={data.subscription.status}
-                  variant={statusVariant(data.subscription.status)}
-                />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Minutes Used (CDR)</p>
-                <p className="font-medium text-slate-800">{data.usageMinutes} min</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Plan Minutes</p>
-                <p className="font-medium text-slate-800">
-                  {data.subscription.totalMinutes ?? "—"} min
-                </p>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-400">Plan</p>
+                  <p className="font-medium text-slate-800">{data.subscription.planName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Status</p>
+                  <StatusBadge
+                    text={data.subscription.status}
+                    variant={statusVariant(data.subscription.status)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Minutes Used (CDR)</p>
+                  <p className="font-medium text-slate-800">{data.usageMinutes} min</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Plan Minutes</p>
+                  <p className="font-medium text-slate-800">
+                    {data.subscription.totalMinutes ?? "—"} min
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
+
+      {/* ── Renewal Modal (rendered at this level so it overlays everything) ── */}
+      <RenewalModal
+        isOpen={renewal.isOpen}
+        onClose={renewal.close}
+        plans={renewal.plans}
+        plansLoading={renewal.plansLoading}
+        plansError={renewal.plansError}
+        loadingPlanId={renewal.loadingPlanId}
+        error={renewal.error}
+        onRenew={renewal.handleRenew}
+        currentPlanName={currentPlanName}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { TopHeader } from "@/components/shared/top-header";
 
+
 export default function DashboardLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
@@ -9,7 +10,9 @@ export default function DashboardLayout({
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <TopHeader title="Customer Dashboard" />
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6">
+          {children}
+        </main>
         <footer
           className="flex items-center justify-center py-3 px-6 text-xs"
           style={{
@@ -32,3 +35,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+
