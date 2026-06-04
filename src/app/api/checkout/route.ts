@@ -27,9 +27,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user is logged in
+    // Check if user is genuinely logged in.
+    // verifyRequestJwt reads the HttpOnly "token" cookie which is set on login.
+    // We also require the client-side presence cookie (voiceos_auth_token) to be set —
+    // this cookie is cleared immediately on logout via document.cookie in clearAuthSession().
+    // Without this second check, a user who logged out still carries the HttpOnly "token"
+    // cookie (because JS can't clear HttpOnly cookies), making them appear logged-in here
+    // and sending them to /dashboard instead of /auth/register after guest checkout.
     const payload = await verifyRequestJwt(req);
-    const isLoggedIn = !!payload;
+    const hasClientSession = Boolean(
+      req.cookies.get(process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME ?? "voiceos_auth_token")?.value
+    );
+    const isLoggedIn = !!payload && hasClientSession;
 
     const metadata: Record<string, string> = {
       plan_id: planId,

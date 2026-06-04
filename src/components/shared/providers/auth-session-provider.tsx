@@ -28,6 +28,12 @@ export function AuthSessionProvider({ children }: { children: React.ReactNode })
       return;
     }
 
+    // Never redirect while on any /auth/* page — the register page lands here
+    // after Stripe checkout and must not be hijacked by session checks.
+    if (pathname.startsWith("/auth/")) {
+      return;
+    }
+
     if (accessToken && isSessionExpired()) {
       clearSession();
       router.replace("/auth/login?reason=session_expired");

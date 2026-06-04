@@ -63,6 +63,35 @@ export async function GET(req: NextRequest) {
 
   const sub = (user as any).subscriptions;
 
+  // Fetch full subscription history for this user, newest first
+  const { data: historyRows } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      status,
+      started_at,
+      ends_at,
+      cancelled_at,
+      minutes_used,
+      monthly_price_snapshot,
+      total_minutes_snapshot,
+      plans ( display_name )
+    `)
+    .eq("user_id", userId)
+    .order("started_at", { ascending: false });
+
+  const history = (historyRows ?? []).map((h: any) => ({
+    id: h.id,
+    status: h.status,
+    planName: h.plans?.display_name ?? "—",
+    startedAt: h.started_at,
+    endsAt: h.ends_at,
+    cancelledAt: h.cancelled_at,
+    minutesUsed: parseFloat(h.minutes_used ?? "0"),
+    totalMinutes: h.total_minutes_snapshot,
+    monthlyPrice: parseFloat(h.monthly_price_snapshot ?? "0"),
+  }));
+
   return NextResponse.json({
     subscription: sub
       ? {
@@ -79,5 +108,6 @@ export async function GET(req: NextRequest) {
         }
       : null,
     usageMinutes,
+    history,
   });
 }

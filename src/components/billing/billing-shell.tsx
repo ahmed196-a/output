@@ -12,28 +12,33 @@ import { SubscriptionExpiryBanner } from "@/components/billing/subscription-expi
 import { RenewalModal } from "@/components/billing/renewal-modal";
 import { useRenewal } from "@/hooks/use-renewal";
 import { formatDate } from "@/utils/format";
-import { CreditCard, Clock, Calendar, Zap, RefreshCw } from "lucide-react";
+import { CreditCard, Clock, Calendar, Zap, RefreshCw, History } from "lucide-react";
+
+type SubscriptionRecord = {
+  id: string;
+  status: string;
+  planName: string;
+  startedAt: string;
+  endsAt: string | null;
+  cancelledAt: string | null;
+  minutesUsed: number;
+  totalMinutes: number | null;
+  monthlyPrice: number;
+};
 
 type SubscriptionData = {
-  subscription: {
-    id: string;
-    status: string;
-    planName: string;
-    startedAt: string;
-    endsAt: string | null;
-    cancelledAt: string | null;
-    minutesUsed: number;
-    totalMinutes: number | null;
-    monthlyPrice: number;
+  subscription: (SubscriptionRecord & {
     pricePerMinute: number;
-  } | null;
+  }) | null;
   usageMinutes: number;
+  history: SubscriptionRecord[];
 };
 
 function statusVariant(status: string) {
   if (status === "active") return "success";
   if (status === "cancelled") return "danger";
   if (status === "past_due") return "warning";
+  if (status === "expired") return "neutral";
   return "neutral";
 }
 
@@ -71,15 +76,18 @@ export function BillingShell() {
   });
 
   const renewal = useRenewal();
-
-  // Derive current plan name (lowercase) for the modal to highlight
   const currentPlanName = data?.subscription?.planName?.toLowerCase();
+
+  // History rows that are NOT the current active subscription
+  const pastSubscriptions = (data?.history ?? []).filter(
+    (h) => h.id !== data?.subscription?.id
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Billing & Subscription"
-        description="View your current plan, usage, and subscription details."
+        description="View your current plan, usage, and subscription history."
       />
 
       {isLoading ? (
@@ -93,14 +101,14 @@ export function BillingShell() {
         />
       ) : (
         <>
-          {/* ── Expiry / renewal banner (shown 3 days before or when expired) ── */}
+          {/* ── Expiry / renewal banner ── */}
           <SubscriptionExpiryBanner
             status={data.subscription.status}
             endsAt={data.subscription.endsAt}
             onRenew={renewal.open}
           />
 
-          {/* ── Subscription cards ── */}
+          {/* ── Current subscription cards ── */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {/* Plan Card */}
             <div
@@ -119,8 +127,6 @@ export function BillingShell() {
                 text={data.subscription.status}
                 variant={statusVariant(data.subscription.status)}
               />
-
-              {/* Renew button always available on plan card */}
               <button
                 onClick={renewal.open}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -186,7 +192,7 @@ export function BillingShell() {
               </div>
             </div>
 
-            {/* Full-width summary row */}
+            {/* Summary row */}
             <div
               className="rounded-2xl bg-white p-5 sm:col-span-2 xl:col-span-4"
               style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
@@ -220,10 +226,110 @@ export function BillingShell() {
               </div>
             </div>
           </div>
+
+          {/* ── Subscription History ── */}
+          {pastSubscriptions.length > 0 && (
+            <div
+              className="rounded-2xl bg-white overflow-hidden"
+              style={{ boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-light)" }}
+            >
+              <div
+                className="flex items-center gap-2 px-6 py-4"
+                style={{ borderBottom: "1px solid var(--border-light)" }}
+              >
+                <History className="h-4 w-4 text-indigo-600" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+                  Subscription History
+                </span>
+                <span
+                  className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: "var(--surface-2)", color: "var(--muted-text)" }}
+                >
+                  {pastSubscriptions.length} previous {pastSubscriptions.length === 1 ? "record" : "records"}
+                </span>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
+                      {["Plan", "Status", "Started", "Ended", "Minutes Used", "Price"].map((h) => (
+                        <th
+                          key={h}
+                          className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: "var(--muted-text)" }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastSubscriptions.map((sub, i) => (
+                      <tr
+                        key={sub.id}
+                        style={{
+                          borderBottom: i < pastSubscriptions.length - 1 ? "1px solid var(--border-light)" : "none",
+                          background: i % 2 === 1 ? "rgba(248,250,252,0.6)" : "white",
+                        }}
+                      >
+                        <td className="px-6 py-3.5 font-medium text-slate-800">{sub.planName}</td>
+                        <td className="px-6 py-3.5">
+                          <StatusBadge text={sub.status} variant={statusVariant(sub.status)} />
+                        </td>
+                        <td className="px-6 py-3.5 text-slate-500">{formatDate(sub.startedAt)}</td>
+                        <td className="px-6 py-3.5 text-slate-500">
+                          {sub.cancelledAt
+                            ? formatDate(sub.cancelledAt)
+                            : sub.endsAt
+                              ? formatDate(sub.endsAt)
+                              : "—"}
+                        </td>
+                        <td className="px-6 py-3.5 text-slate-500">
+                          {sub.minutesUsed} / {sub.totalMinutes ?? "∞"} min
+                        </td>
+                        <td className="px-6 py-3.5 text-slate-500">
+                          ${sub.monthlyPrice.toFixed(2)}/mo
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y" style={{ borderColor: "var(--border-light)" }}>
+                {pastSubscriptions.map((sub) => (
+                  <div key={sub.id} className="px-5 py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">{sub.planName}</span>
+                      <StatusBadge text={sub.status} variant={statusVariant(sub.status)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500">
+                      <span>Started: {formatDate(sub.startedAt)}</span>
+                      <span>
+                        Ended:{" "}
+                        {sub.cancelledAt
+                          ? formatDate(sub.cancelledAt)
+                          : sub.endsAt
+                            ? formatDate(sub.endsAt)
+                            : "—"}
+                      </span>
+                      <span>
+                        Minutes: {sub.minutesUsed} / {sub.totalMinutes ?? "∞"}
+                      </span>
+                      <span>${sub.monthlyPrice.toFixed(2)}/mo</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
-      {/* ── Renewal Modal (rendered at this level so it overlays everything) ── */}
+      {/* ── Renewal Modal ── */}
       <RenewalModal
         isOpen={renewal.isOpen}
         onClose={renewal.close}

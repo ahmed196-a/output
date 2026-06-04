@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Star, X } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
@@ -19,6 +19,9 @@ const EMPTY_FORM: AdminPlanInput = {
   price_per_minute: 0,
   description: "",
   is_active: true,
+  stripe_price_id: null,
+  features: [],
+  is_featured: false,
 };
 
 export function AdminPlansShell() {
@@ -30,11 +33,13 @@ export function AdminPlansShell() {
   const [form, setForm] = useState<AdminPlanInput>(EMPTY_FORM);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [newFeature, setNewFeature] = useState("");
 
   function openCreate() {
     setEditingPlan(null);
     setForm(EMPTY_FORM);
     setFormError(null);
+    setNewFeature("");
     setModalOpen(true);
   }
 
@@ -48,8 +53,12 @@ export function AdminPlansShell() {
       price_per_minute: plan.price_per_minute,
       description: plan.description ?? "",
       is_active: plan.is_active,
+      stripe_price_id: plan.stripe_price_id ?? null,
+      features: plan.features ?? [],
+      is_featured: plan.is_featured ?? false,
     });
     setFormError(null);
+    setNewFeature("");
     setModalOpen(true);
   }
 
@@ -57,6 +66,21 @@ export function AdminPlansShell() {
     setModalOpen(false);
     setEditingPlan(null);
     setFormError(null);
+    setNewFeature("");
+  }
+
+  function addFeature() {
+    const trimmed = newFeature.trim();
+    if (!trimmed) return;
+    setForm((f) => ({ ...f, features: [...(f.features ?? []), trimmed] }));
+    setNewFeature("");
+  }
+
+  function removeFeature(index: number) {
+    setForm((f) => ({
+      ...f,
+      features: (f.features ?? []).filter((_, i) => i !== index),
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -118,7 +142,12 @@ export function AdminPlansShell() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-base font-semibold text-slate-900">{plan.display_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-base font-semibold text-slate-900">{plan.display_name}</p>
+                      {plan.is_featured && (
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-0.5 font-mono">{plan.name}</p>
                   </div>
                   <StatusBadge
@@ -146,6 +175,23 @@ export function AdminPlansShell() {
                   </div>
                 </div>
 
+                {plan.features && plan.features.length > 0 && (
+                  <ul className="space-y-1">
+                    {plan.features.map((f, i) => (
+                      <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {plan.stripe_price_id && (
+                  <p className="text-xs text-slate-400 font-mono truncate">
+                    Stripe: {plan.stripe_price_id}
+                  </p>
+                )}
+
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => openEdit(plan)}
@@ -171,7 +217,7 @@ export function AdminPlansShell() {
       {/* Add / Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h3 className="text-base font-semibold text-slate-900">
                 {editingPlan ? "Edit Plan" : "New Plan"}
@@ -179,6 +225,8 @@ export function AdminPlansShell() {
               <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
             </div>
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+              {/* Name fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Internal Name <span className="text-rose-500">*</span></label>
@@ -202,13 +250,14 @@ export function AdminPlansShell() {
                 </div>
               </div>
 
+              {/* Pricing fields */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Monthly Price ($)</label>
                   <input
                     type="number" min="0" step="0.01" required
-                    value={form.monthly_price}
-                    onChange={(e) => setForm((f) => ({ ...f, monthly_price: parseFloat(e.target.value) }))}
+                    value={form.monthly_price === 0 ? "" : form.monthly_price}
+                    onChange={(e) => setForm((f) => ({ ...f, monthly_price: parseFloat(e.target.value) || 0 }))}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
@@ -216,8 +265,8 @@ export function AdminPlansShell() {
                   <label className="block text-xs font-medium text-slate-600 mb-1">Total Minutes</label>
                   <input
                     type="number" min="1" required
-                    value={form.total_minutes}
-                    onChange={(e) => setForm((f) => ({ ...f, total_minutes: parseInt(e.target.value) }))}
+                    value={form.total_minutes === 0 ? "" : form.total_minutes}
+                    onChange={(e) => setForm((f) => ({ ...f, total_minutes: parseInt(e.target.value) || 0 }))}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
@@ -225,13 +274,14 @@ export function AdminPlansShell() {
                   <label className="block text-xs font-medium text-slate-600 mb-1">Price/Minute ($)</label>
                   <input
                     type="number" min="0" step="0.000001" required
-                    value={form.price_per_minute}
-                    onChange={(e) => setForm((f) => ({ ...f, price_per_minute: parseFloat(e.target.value) }))}
+                    value={form.price_per_minute === 0 ? "" : form.price_per_minute}
+                    onChange={(e) => setForm((f) => ({ ...f, price_per_minute: parseFloat(e.target.value) || 0 }))}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
               </div>
 
+              {/* Description */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Description</label>
                 <textarea
@@ -243,15 +293,75 @@ export function AdminPlansShell() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, is_active: !f.is_active }))}
-                  className={`transition-colors ${form.is_active ? "text-indigo-600" : "text-slate-400"}`}
-                >
-                  {form.is_active ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6" />}
-                </button>
-                <span className="text-sm text-slate-600">{form.is_active ? "Active" : "Inactive"}</span>
+              {/* Stripe Price ID */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Stripe Price ID</label>
+                <input
+                  value={form.stripe_price_id ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, stripe_price_id: e.target.value || null }))}
+                  placeholder="e.g. price_1ABC..."
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+
+              {/* Features */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Features</label>
+                <div className="space-y-2">
+                  {(form.features ?? []).map((feat, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5">
+                      <span className="flex-1 text-sm text-slate-700">{feat}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeFeature(i)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <input
+                      value={newFeature}
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFeature(); } }}
+                      placeholder="Add a feature and press Enter"
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={addFeature}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toggles: Is Active + Is Featured */}
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, is_active: !f.is_active }))}
+                    className={`transition-colors ${form.is_active ? "text-indigo-600" : "text-slate-400"}`}
+                  >
+                    {form.is_active ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6" />}
+                  </button>
+                  <span className="text-sm text-slate-600">{form.is_active ? "Active" : "Inactive"}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, is_featured: !f.is_featured }))}
+                    className={`transition-colors ${form.is_featured ? "text-amber-500" : "text-slate-400"}`}
+                  >
+                    <Star className={`h-5 w-5 ${form.is_featured ? "fill-amber-400" : ""}`} />
+                  </button>
+                  <span className="text-sm text-slate-600">{form.is_featured ? "Featured" : "Not Featured"}</span>
+                </div>
               </div>
 
               {formError && <p className="text-xs text-rose-500">{formError}</p>}

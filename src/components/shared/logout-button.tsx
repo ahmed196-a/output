@@ -10,9 +10,20 @@ export function LogoutButton() {
   const clearSession = useAuthStore((s) => s.clearSession);
   const queryClient = useQueryClient();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 1. Clear client-side session (localStorage + voiceos_auth_token cookie)
     clearSession();
     queryClient.clear();
+
+    // 2. Clear the HttpOnly "token" cookie — JS can't touch it directly,
+    //    so we ask the server to expire it. Fire-and-forget: even if this
+    //    fails the user is effectively logged out client-side.
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // non-critical — proceed regardless
+    }
+
     router.replace("/pricing");
   };
 

@@ -12,8 +12,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
  *
  * 1. Verifies the Stripe checkout session
  * 2. Fetches plan details from DB
- * 3. Inserts a new subscription row
- * 4. Updates users.active_subscription_id
+ * 3. Marks the user's current active subscription as "expired"
+ * 4. Inserts a new subscription row
+ * 5. Updates users.active_subscription_id
  */
 export async function POST(req: NextRequest) {
   const payload = await verifyRequestJwt(req);
@@ -59,12 +60,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plan not found." }, { status: 404 });
     }
 
-    // 3. Calculate subscription period (30 days from now)
+    // 3. Mark the current active subscription as "expired"
+    const { data: user } = await supabase
+      .from("users")
+      .select("active_subscription_id")
+      .eq("id", payload.sub)
+      .single();
+
+    if (user?.active_subscription_id) {
+      const { error: expireError } = await supabase
+        .from("subscriptions")
+        .update({ status: "expired" })
+        .eq("id", user.active_subscription_id)
+        .eq("user_id", payload.sub); // safety: only touch this user's row
+
+      if (expireError) {
+        console.error("[renew/confirm] expire old subscription error:", expireError);
+        // Non-fatal — proceed with creating the new subscription anyway
+      }
+    }
+
+    // 4. Calculate subscription period (30 days from now)
     const now = new Date();
     const endsAt = new Date(now);
     endsAt.setDate(endsAt.getDate() + 30);
 
-    // 4. Insert new subscription row
+    // 5. Insert new subscription row
     const { data: newSub, error: insertError } = await supabase
       .from("subscriptions")
       .insert({
@@ -91,7 +112,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Update user's active_subscription_id
+    // 6. Update user's active_subscription_id
     const { error: updateError } = await supabase
       .from("users")
       .update({ active_subscription_id: newSub.id })
