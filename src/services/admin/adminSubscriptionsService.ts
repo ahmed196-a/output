@@ -1,6 +1,6 @@
 export type AdminSubscription = {
   id: string;
-  status: "active" | "cancelled" | "past_due" | "trialing";
+  status: "active" | "cancelled" | "past_due" | "trialing"|"expired";
   startedAt: string;
   endsAt: string | null;
   cancelledAt: string | null;
@@ -16,7 +16,7 @@ export type AdminSubscription = {
   usageMinutes: number;
 };
 
-export type SubscriptionAction = "pause" | "resume" | "terminate";
+export type SubscriptionAction = "pause" | "resume" | "terminate"| "renew";
 
 export const adminSubscriptionsService = {
   async getSubscriptions(): Promise<AdminSubscription[]> {

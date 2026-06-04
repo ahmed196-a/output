@@ -18,6 +18,9 @@ export async function PATCH(req: NextRequest, context: any) {
         price_per_minute: body.price_per_minute,
         description: body.description ?? null,
         is_active: body.is_active,
+        stripe_price_id: body.stripe_price_id?.trim() || null,
+        features: body.features ?? [],
+        is_featured: body.is_featured ?? false,
       })
       .eq("id", planId)
       .select()

@@ -1,4 +1,3 @@
-// src/components/billing/renewal-modal.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -8,40 +7,10 @@ import {
   Loader2,
   ArrowRight,
   Phone,
-  Clock,
-  Bot,
-  BarChart3,
-  Shield,
   Zap,
-  Headphones,
   AlertCircle,
 } from "lucide-react";
 import type { RenewablePlan } from "@/services/renewal-service";
-
-// ─── Feature map (mirrors pricing page) ────────────────────────────────────────
-const PLAN_FEATURES: Record<string, { text: string; icon: React.ElementType }[]> = {
-  beginner: [
-    { text: "200 AI call minutes/month", icon: Clock },
-    { text: "1 active AI agent", icon: Bot },
-    { text: "Call logs & basic summaries", icon: BarChart3 },
-    { text: "Email support", icon: Headphones },
-  ],
-  pro: [
-    { text: "800 AI call minutes/month", icon: Clock },
-    { text: "Multi-step workflow automation", icon: Zap },
-    { text: "CRM integrations (HubSpot, Zoho)", icon: Shield },
-    { text: "Advanced analytics dashboard", icon: BarChart3 },
-    { text: "Priority support", icon: Headphones },
-  ],
-  enterprise: [
-    { text: "2,500 AI call minutes/month", icon: Clock },
-    { text: "Dedicated AI voice agent", icon: Bot },
-    { text: "End-to-end ticketing automation", icon: Zap },
-    { text: "Custom dashboard & reporting", icon: BarChart3 },
-    { text: "Dedicated success manager", icon: Headphones },
-    { text: "SLA-backed uptime & support", icon: Shield },
-  ],
-};
 
 type RenewalModalProps = {
   isOpen: boolean;
@@ -52,7 +21,6 @@ type RenewalModalProps = {
   loadingPlanId: string | null;
   error: string | null;
   onRenew: (plan: RenewablePlan) => void;
-  /** The plan name the user is currently on (to highlight) */
   currentPlanName?: string;
 };
 
@@ -69,7 +37,6 @@ export function RenewalModal({
 }: RenewalModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -78,7 +45,6 @@ export function RenewalModal({
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -122,9 +88,8 @@ export function RenewalModal({
           </button>
         </div>
 
-        {/* Body — scrollable */}
+        {/* Body */}
         <div className="overflow-y-auto px-7 py-6" style={{ maxHeight: "calc(92vh - 110px)" }}>
-          {/* Error banner */}
           {(error || plansError) && (
             <div
               className="mb-5 flex items-start gap-3 rounded-xl px-4 py-3 text-sm"
@@ -135,7 +100,6 @@ export function RenewalModal({
             </div>
           )}
 
-          {/* Skeleton loader */}
           {plansLoading && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => (
@@ -156,35 +120,33 @@ export function RenewalModal({
             </div>
           )}
 
-          {/* Plan cards */}
           {!plansLoading && plans.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {plans.map((plan) => {
-                const isPro = plan.name === "pro";
+                const isFeatured = plan.is_featured;
                 const isCurrent = plan.name === currentPlanName;
-                const features = PLAN_FEATURES[plan.name] ?? [];
                 const isLoading = loadingPlanId === plan.id;
+                const missingStripe = !plan.stripe_price_id;
 
                 return (
                   <div
                     key={plan.id}
                     className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-200"
                     style={{
-                      border: isPro
+                      border: isFeatured
                         ? "2px solid transparent"
                         : `1px solid ${isCurrent ? "#6366f1" : "var(--border-light)"}`,
-                      background: isPro
+                      background: isFeatured
                         ? "linear-gradient(white, white) padding-box, linear-gradient(135deg, #6366f1, #8b5cf6) border-box"
                         : "white",
-                      boxShadow: isPro
+                      boxShadow: isFeatured
                         ? "0 8px 32px rgba(99,102,241,0.18)"
                         : isCurrent
                           ? "0 4px 20px rgba(99,102,241,0.10)"
                           : "var(--shadow-sm)",
                     }}
                   >
-                    {/* Popular badge */}
-                    {isPro && (
+                    {isFeatured && (
                       <div
                         className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-white"
                         style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
@@ -193,8 +155,7 @@ export function RenewalModal({
                       </div>
                     )}
 
-                    {/* Current plan badge */}
-                    {isCurrent && !isPro && (
+                    {isCurrent && !isFeatured && (
                       <div
                         className="flex items-center justify-center py-1.5 text-xs font-semibold"
                         style={{ background: "rgba(99,102,241,0.08)", color: "#6366f1" }}
@@ -203,12 +164,11 @@ export function RenewalModal({
                       </div>
                     )}
 
-                    <div className="flex flex-col flex-1 p-5 gap-0">
-                      {/* Plan name */}
+                    <div className="flex flex-col flex-1 p-5">
                       <div className="mb-4">
                         <span
                           className="text-xs font-bold uppercase tracking-wider"
-                          style={{ color: isPro ? "#6366f1" : "var(--muted-text)" }}
+                          style={{ color: isFeatured ? "#6366f1" : "var(--muted-text)" }}
                         >
                           {plan.display_name}
                         </span>
@@ -223,16 +183,15 @@ export function RenewalModal({
                         </div>
                       </div>
 
-                      {/* Minutes highlight */}
                       <div
                         className="flex items-center gap-3 rounded-xl p-3 mb-4"
-                        style={{ background: isPro ? "rgba(99,102,241,0.06)" : "var(--surface-2)" }}
+                        style={{ background: isFeatured ? "rgba(99,102,241,0.06)" : "var(--surface-2)" }}
                       >
                         <div
                           className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
-                          style={{ background: isPro ? "#6366f1" : "var(--border)" }}
+                          style={{ background: isFeatured ? "#6366f1" : "var(--border)" }}
                         >
-                          <Phone className="h-3.5 w-3.5" color={isPro ? "white" : "var(--muted-text)"} />
+                          <Phone className="h-3.5 w-3.5" color={isFeatured ? "white" : "var(--muted-text)"} />
                         </div>
                         <div>
                           <div className="text-sm font-bold text-slate-800">
@@ -244,35 +203,36 @@ export function RenewalModal({
                         </div>
                       </div>
 
-                      {/* Features */}
-                      <ul className="flex flex-col gap-2.5 flex-1 mb-5">
-                        {features.map(({ text }) => (
-                          <li key={text} className="flex items-start gap-2.5">
-                            <div
-                              className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md"
-                              style={{ background: isPro ? "rgba(99,102,241,0.10)" : "var(--success-bg)" }}
-                            >
-                              <Check
-                                className="h-3 w-3"
-                                style={{ color: isPro ? "#6366f1" : "var(--success-fg)" }}
-                                strokeWidth={2.5}
-                              />
-                            </div>
-                            <span className="text-sm text-slate-500">{text}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {plan.features.length > 0 && (
+                        <ul className="flex flex-col gap-2.5 flex-1 mb-5">
+                          {plan.features.map((text) => (
+                            <li key={text} className="flex items-start gap-2.5">
+                              <div
+                                className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md"
+                                style={{ background: isFeatured ? "rgba(99,102,241,0.10)" : "var(--success-bg)" }}
+                              >
+                                <Check
+                                  className="h-3 w-3"
+                                  style={{ color: isFeatured ? "#6366f1" : "var(--success-fg)" }}
+                                  strokeWidth={2.5}
+                                />
+                              </div>
+                              <span className="text-sm text-slate-500">{text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
 
-                      {/* CTA */}
                       <button
                         onClick={() => onRenew(plan)}
-                        disabled={!!loadingPlanId}
+                        disabled={!!loadingPlanId || missingStripe}
+                        title={missingStripe ? "Stripe price not configured for this plan" : undefined}
                         className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
-                          background: isPro
+                          background: isFeatured
                             ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
                             : "#0f172a",
-                          boxShadow: isPro
+                          boxShadow: isFeatured
                             ? "0 4px 16px rgba(99,102,241,0.3)"
                             : "0 4px 12px rgba(0,0,0,0.12)",
                         }}
@@ -282,6 +242,8 @@ export function RenewalModal({
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Redirecting…
                           </>
+                        ) : missingStripe ? (
+                          "Not available"
                         ) : (
                           <>
                             {isCurrent ? "Renew This Plan" : "Select & Pay"}

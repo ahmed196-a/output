@@ -3,8 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 /**
  * GET /api/plans
- * Returns all active plans from the public.plans table.
- * Used by the pricing page to render plan cards dynamically.
+ * Returns all active plans. Used by the pricing page and renewal modal.
  */
 export async function GET() {
   try {
@@ -12,7 +11,9 @@ export async function GET() {
 
     const { data: plans, error } = await supabase
       .from("plans")
-      .select("id, name, display_name, monthly_price, total_minutes, price_per_minute, description")
+      .select(
+        "id, name, display_name, monthly_price, total_minutes, price_per_minute, description, stripe_price_id, features, is_featured"
+      )
       .eq("is_active", true)
       .order("monthly_price", { ascending: true });
 

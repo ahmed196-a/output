@@ -7,6 +7,9 @@ export type AdminPlan = {
   price_per_minute: number;
   description: string | null;
   is_active: boolean;
+  stripe_price_id: string | null;
+  features: string[];
+  is_featured: boolean;
   created_at: string;
   updated_at: string;
 };

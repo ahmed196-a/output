@@ -1,4 +1,3 @@
-// src/services/renewal-service.ts
 import { apiClient } from "@/lib/api-client";
 
 export type RenewablePlan = {
@@ -9,12 +8,12 @@ export type RenewablePlan = {
   total_minutes: number;
   price_per_minute: number;
   description: string;
+  stripe_price_id: string | null;
+  features: string[];
+  is_featured: boolean;
 };
 
 export const renewalService = {
-  /**
-   * Fetches all active plans from /api/plans
-   */
   async getPlans(): Promise<RenewablePlan[]> {
     const res = await fetch("/api/plans");
     const json = await res.json();
@@ -22,10 +21,6 @@ export const renewalService = {
     return json.plans ?? [];
   },
 
-  /**
-   * Creates a Stripe checkout session for renewal.
-   * Returns the Stripe redirect URL.
-   */
   async createRenewalSession(params: {
     priceId: string;
     planId: string;

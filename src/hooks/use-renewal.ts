@@ -1,13 +1,6 @@
-// src/hooks/use-renewal.ts
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { renewalService, RenewablePlan } from "@/services/renewal-service";
-
-const STRIPE_PRICE_IDS: Record<string, string> = {
-  beginner: process.env.NEXT_PUBLIC_STRIPE_PRICE_BEGINNER ?? "",
-  pro: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "",
-  enterprise: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE ?? "",
-};
 
 export function useRenewal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +11,7 @@ export function useRenewal() {
   const plansQuery = useQuery({
     queryKey: ["renewal", "plans"],
     queryFn: renewalService.getPlans,
-    enabled: isOpen, // only fetch when modal opens
+    enabled: isOpen,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -36,9 +29,10 @@ export function useRenewal() {
   };
 
   const handleRenew = async (plan: RenewablePlan) => {
-    const priceId = STRIPE_PRICE_IDS[plan.name];
-    if (!priceId) {
-      setError(`Stripe price ID for "${plan.display_name}" is not configured.`);
+    if (!plan.stripe_price_id) {
+      setError(
+        `No Stripe price configured for "${plan.display_name}". Ask your admin to add it in the Plans settings.`
+      );
       return;
     }
 
@@ -47,7 +41,7 @@ export function useRenewal() {
 
     try {
       const url = await renewalService.createRenewalSession({
-        priceId,
+        priceId: plan.stripe_price_id,
         planId: plan.id,
         planName: plan.name,
       });
