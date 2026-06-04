@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   const userId = payload.sub;
   const supabase = createServerSupabaseClient();
 
-  // Get user's active subscription
   const { data: user, error } = await supabase
     .from("users")
     .select(`
@@ -40,28 +39,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  // Get CDR usage for this user's assigned assistant
-  const { data: assignment } = await supabase
-    .from("user_assistant_assignments")
-    .select("assistant_id")
-    .eq("user_id", userId)
-    .single();
-
-  let usageMinutes = 0;
-  if (assignment?.assistant_id) {
-    const { data: usageRows } = await supabase
-      .from("cdrs")
-      .select("total_seconds")
-      .eq("assistant_id", assignment.assistant_id);
-
-    const totalSeconds = (usageRows ?? []).reduce(
-      (sum: number, row: any) => sum + (row.total_seconds ?? 0),
-      0
-    );
-    usageMinutes = Math.round(totalSeconds / 60);
-  }
-
   const sub = (user as any).subscriptions;
+
+  // Use minutes_used directly from the subscriptions table
+  const usageMinutes = sub ? parseFloat(sub.minutes_used ?? "0") : 0;
 
   // Fetch full subscription history for this user, newest first
   const { data: historyRows } = await supabase

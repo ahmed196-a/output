@@ -151,70 +151,70 @@ export function AdminCustomersShell() {
                   />
                 ),
               },
-              { key: "plan", label: "Plan" },
-              {
-                key: "subStatus",
-                label: "Subscription",
-                render: (v) => {
-                  const val = String(v);
-                  if (val === "—")
-                    return <span className="text-slate-400">—</span>;
-                  return (
-                    <StatusBadge
-                      text={val}
-                      variant={
-                        val === "active"
-                          ? "success"
-                          : val === "canceled"
-                            ? "danger"
-                            : val === "past_due"
-                              ? "warning"
-                              : "neutral"
-                      }
-                    />
-                  );
-                },
-              },
+              // { key: "plan", label: "Plan" },
+              // {
+              //   key: "subStatus",
+              //   label: "Subscription",
+              //   render: (v) => {
+              //     const val = String(v);
+              //     if (val === "—")
+              //       return <span className="text-slate-400">—</span>;
+              //     return (
+              //       <StatusBadge
+              //         text={val}
+              //         variant={
+              //           val === "active"
+              //             ? "success"
+              //             : val === "canceled"
+              //               ? "danger"
+              //               : val === "past_due"
+              //                 ? "warning"
+              //                 : "neutral"
+              //         }
+              //       />
+              //     );
+              //   },
+              // },
+              // // {
+              // //   key: "usageMinutes",
+              // //   label: "Plan Usage",
+              // //   render: (v, row) =>
+              // //     v != null && row.totalMinutes
+              // //       ? minutesBar(v as number, row.totalMinutes as number)
+              // //       : <span className="text-slate-400">—</span>,
+              // // },
+              // // {
+              // //   key: "usageMinutes",
+              // //   label: "CDR Usage",
+              // //   render: (v) => (
+              // //     <span className="text-sm text-slate-700">{v as number} min</span>
+              // //   ),
+              // // },
               // {
               //   key: "usageMinutes",
-              //   label: "Plan Usage",
-              //   render: (v, row) =>
-              //     v != null && row.totalMinutes
-              //       ? minutesBar(v as number, row.totalMinutes as number)
-              //       : <span className="text-slate-400">—</span>,
-              // },
-              // {
-              //   key: "usageMinutes",
-              //   label: "CDR Usage",
-              //   render: (v) => (
-              //     <span className="text-sm text-slate-700">{v as number} min</span>
-              //   ),
-              // },
-              {
-                key: "usageMinutes",
-                label: "Usage (CDR / Plan)",
-                render: (v, row) => {
-                  const used = v as number;
-                  const total = row.totalMinutes as number;
+              //   label: "Usage (CDR / Plan)",
+              //   render: (v, row) => {
+              //     const used = v as number;
+              //     const total = row.totalMinutes as number;
 
-                  return (
-                    <div className="flex items-center gap-3">
-                      {/* Bar */}
-                      {total ? (
-                        minutesBar(used, total)
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
+              //     return (
+              //       <div className="flex items-center gap-3">
+              //         {/* Bar */}
+              //         {total ? (
+              //           minutesBar(used, total)
+              //         ) : (
+              //           <span className="text-slate-400">—</span>
+              //         )}
 
-                      {/* Text */}
-                      {/* <span className="text-xs text-slate-500 whitespace-nowrap">
-                        {used} min used
-                      </span> */}
-                    </div>
-                  );
-                },
-              },
-              { key: "monthlyPrice", label: "Monthly" },
+              //         {/* Text */}
+              //         {/* <span className="text-xs text-slate-500 whitespace-nowrap">
+              //           {used} min used
+              //         </span> */}
+              //       </div>
+              //     );
+              //   },
+              // },
+              // { key: "monthlyPrice", label: "Monthly" },
               {
                 key: "createdAt",
                 label: "Joined",

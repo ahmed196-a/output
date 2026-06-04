@@ -17,17 +17,18 @@ export async function GET() {
       .select("*", { count: "exact", head: true })
       .eq("status", "active");
 
-    // Total minutes used across all subscriptions
-    const { data: minutesData } = await supabase
-      .from("cdrs")
-      .select("total_mins");
+    // Total minutes used — sum minutes_used from active subscriptions directly
+    const { data: minutesRows } = await supabase
+      .from("subscriptions")
+      .select("minutes_used")
+      .eq("status", "active");
 
-    const totalMinutesUsed = (minutesData ?? []).reduce(
-      (sum, row) => sum + parseFloat(row.total_mins ?? "0"),
+    const totalMinutesUsed = (minutesRows ?? []).reduce(
+      (sum: number, row: any) => sum + parseFloat(row.minutes_used ?? "0"),
       0
     );
 
-    // Total revenue (sum of monthly_price_snapshot for active subscriptions)
+        // Total revenue (sum of monthly_price_snapshot for active subscriptions)
     const { data: revenueData } = await supabase
       .from("subscriptions")
       .select("monthly_price_snapshot")

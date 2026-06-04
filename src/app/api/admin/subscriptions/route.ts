@@ -66,38 +66,10 @@ export async function GET() {
       plansMap[p.id] = p;
     });
 
-    // Step 4: fetch assistant assignments for all user_ids
-    const { data: assignments } = await supabase
-      .from("user_assistant_assignments")
-      .select("user_id, assistant_id")
-      .in("user_id", userIds);
-
-    const assignmentMap: Record<string, string> = {};
-    (assignments ?? []).forEach((a: any) => {
-      assignmentMap[a.user_id] = a.assistant_id;
-    });
-
-    // Step 5: fetch usage from call_logs per assistant
-    const assistantIds = Object.values(assignmentMap);
-    const usageMap: Record<string, number> = {};
-    if (assistantIds.length > 0) {
-      const { data: usageRows } = await supabase
-        .from("cdrs")
-        .select("assistant_id, total_seconds")
-        .in("assistant_id", assistantIds);
-
-      (usageRows ?? []).forEach((row: any) => {
-        const aid = row.assistant_id;
-        usageMap[aid] = (usageMap[aid] ?? 0) + (row.total_seconds ?? 0);
-      });
-    }
-
     // Step 6: merge everything
     const rows = subs.map((row: any) => {
       const user = usersMap[row.user_id] ?? {};
       const plan = plansMap[row.plan_id] ?? {};
-      const assignedAgentId = assignmentMap[row.user_id] ?? null;
-      const usageSeconds = assignedAgentId ? (usageMap[assignedAgentId] ?? 0) : 0;
 
       return {
         id: row.id,
@@ -114,9 +86,10 @@ export async function GET() {
         userId: row.user_id,
         planDisplayName: plan.display_name ?? "—",
         planId: row.plan_id,
-        usageMinutes: Math.round(usageSeconds / 60),
+        usageMinutes: parseFloat(row.minutes_used ?? "0"),
       };
     });
+
 
     return NextResponse.json(rows);
   } catch (err: any) {
