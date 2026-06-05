@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Eye, EyeOff, CheckCircle2, UserCog } from "lucide-react";
 import { AdminCustomer } from "@/types/admin/customer";
+import { apiClient } from "@/lib/api-client";
 
 type Props = {
   customer: AdminCustomer;
@@ -64,14 +65,8 @@ export function AdminCustomerEditModal({ customer, onClose }: Props) {
       const body: Record<string, unknown> = { fullName, email, isActive };
       if (newPassword) body.newPassword = newPassword;
 
-      const res = await fetch(`/api/admin/customers/${customer.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Update failed.");
-      return data;
+      const res = await apiClient.patch(`/admin/customers/${customer.id}`, body);
+      return res.data;
     },
     onSuccess: () => {
       setSuccess(true);

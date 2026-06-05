@@ -26,10 +26,9 @@ export async function verifyRequestJwt(
       token = authHeader.slice(7);
     }
 
-    // 2. Fallback to HttpOnly cookie
-    if (!token) {
-      token = req.cookies.get("token")?.value ?? null;
-    }
+    // Note: the auth cookie only holds a presence flag ("1"), not the JWT.
+    // The real token must come from the Authorization header (set by apiClient).
+    // No cookie fallback.
 
     if (!token) {
       return null;

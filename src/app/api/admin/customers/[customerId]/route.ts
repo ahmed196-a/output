@@ -11,7 +11,7 @@ export async function PATCH(
   const { customerId } = await params;
 
   const payload = await verifyRequestJwt(req);
-  if (!payload || !requireRole(payload, ["admin", "superadmin"])) {
+  if (!payload || !requireRole(payload, ["admin", "super_admin"])) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
