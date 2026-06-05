@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AdminPermissionGuard } from "@/components/admin/shared/admin-permission-guard";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -7,17 +8,20 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { useAdminCustomerDetailQuery } from "@/hooks/admin/use-admin-customers-query";
+import { useAdminCustomersQuery, useAdminCustomerDetailQuery } from "@/hooks/admin/use-admin-customers-query";
+import { AdminCustomerEditModal } from "@/components/admin/customers/admin-customer-edit-modal";
 import { formatDateTime } from "@/utils/format";
-import { AdminCustomerChangePassword } from "@/components/admin/customers/admin-customer-change-password";
-
+import { Pencil } from "lucide-react";
 
 type AdminCustomerDetailShellProps = {
   customerId: string;
 };
 
 export function AdminCustomerDetailShell({ customerId }: AdminCustomerDetailShellProps) {
+  const [showEdit, setShowEdit] = useState(false);
   const { data, isLoading, error } = useAdminCustomerDetailQuery(customerId);
+  const { data: allCustomers = [] } = useAdminCustomersQuery();
+  const fullCustomer = allCustomers.find((c) => c.id === customerId) ?? null;
 
   return (
     <AdminPermissionGuard allow={["customers"]}>
@@ -29,10 +33,21 @@ export function AdminCustomerDetailShell({ customerId }: AdminCustomerDetailShel
         <EmptyState title="Customer not found" message="No customer detail was found for this ID." />
       ) : (
         <div className="space-y-6">
-          <PageHeader
-            title={data.customer.companyName}
-            description="Subscription, usage, agent assignment, billing state, and recent customer activity."
-          />
+          <div className="flex items-center justify-between">
+            <PageHeader
+              title={data.customer.companyName}
+              description="Subscription, usage, agent assignment, billing state, and recent customer activity."
+            />
+            {fullCustomer && (
+              <button
+                onClick={() => setShowEdit(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors shadow-sm"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit Customer
+              </button>
+            )}
+          </div>
 
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard label="Calls This Month" value={String(data.usageSummary.callsThisMonth)} />
@@ -88,6 +103,14 @@ export function AdminCustomerDetailShell({ customerId }: AdminCustomerDetailShel
           </section>
           
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && fullCustomer && (
+        <AdminCustomerEditModal
+          customer={fullCustomer}
+          onClose={() => setShowEdit(false)}
+        />
       )}
     </AdminPermissionGuard>
   );

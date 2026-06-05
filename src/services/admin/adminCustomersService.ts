@@ -5,6 +5,13 @@ export type AdminCustomersParams = {
   status?: "all" | "active" | "inactive";
 };
 
+export type UpdateCustomerPayload = {
+  fullName?: string;
+  email?: string;
+  isActive?: boolean;
+  newPassword?: string;
+};
+
 export const adminCustomersService = {
   async getCustomers(params?: AdminCustomersParams): Promise<AdminCustomer[]> {
     const searchParams = new URLSearchParams();
@@ -15,5 +22,15 @@ export const adminCustomersService = {
     const res = await fetch(`/api/admin/customers${qs ? `?${qs}` : ""}`);
     if (!res.ok) throw new Error("Failed to fetch customers.");
     return res.json();
+  },
+
+  async updateCustomer(customerId: string, payload: UpdateCustomerPayload): Promise<void> {
+    const res = await fetch(`/api/admin/customers/${customerId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to update customer.");
   },
 };

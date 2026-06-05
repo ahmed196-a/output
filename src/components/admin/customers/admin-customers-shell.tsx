@@ -1,3 +1,4 @@
+// src/components/admin/customers/admin-customers-shell.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -9,32 +10,17 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useAdminCustomersQuery } from "@/hooks/admin/use-admin-customers-query";
+import { AdminCustomerEditModal } from "@/components/admin/customers/admin-customer-edit-modal";
+import { AdminCustomer } from "@/types/admin/customer";
 import { formatDateTime } from "@/utils/format";
-import { Search } from "lucide-react";
+import { Search, Pencil } from "lucide-react";
 
 type StatusFilter = "all" | "active" | "inactive";
-
-function minutesBar(used: number, total: number) {
-  if (!total) return null;
-  const pct = Math.min(100, Math.round((used / total) * 100));
-  return (
-    <div className="flex items-center gap-2 min-w-[120px]">
-      <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-        <div
-          className={`h-full rounded-full ${pct >= 90 ? "bg-rose-500" : pct >= 70 ? "bg-amber-400" : "bg-indigo-500"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-xs text-slate-500 whitespace-nowrap">
-        {used}/{total}
-      </span>
-    </div>
-  );
-}
 
 export function AdminCustomersShell() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [editingCustomer, setEditingCustomer] = useState<AdminCustomer | null>(null);
 
   const {
     data: customers = [],
@@ -64,18 +50,11 @@ export function AdminCustomersShell() {
 
   const tableRows = filteredRows.map((c) => ({
     id: c.id,
+    _customer: c, // pass full customer for edit
     fullName: c.fullName,
     email: c.email,
     role: c.role,
     isActive: c.isActive,
-    plan: c.subscription?.planName ?? "—",
-    subStatus: c.subscription?.status ?? "—",
-    minutesUsed: c.subscription?.minutesUsed ?? null,
-    totalMinutes: c.subscription?.totalMinutes ?? null,
-    monthlyPrice: c.subscription
-      ? `$${c.subscription.monthlyPrice.toFixed(2)}`
-      : "—",
-    usageMinutes: c.usageMinutes ?? 0,
     createdAt: c.createdAt,
   }));
 
@@ -151,79 +130,36 @@ export function AdminCustomersShell() {
                   />
                 ),
               },
-              // { key: "plan", label: "Plan" },
-              // {
-              //   key: "subStatus",
-              //   label: "Subscription",
-              //   render: (v) => {
-              //     const val = String(v);
-              //     if (val === "—") 
-              //       return <span className="text-slate-400">—</span>;
-              //     return (
-              //       <StatusBadge
-              //         text={val}
-              //         variant={
-              //           val === "active"
-              //             ? "success"
-              //             : val === "canceled"
-              //               ? "danger"
-              //               : val === "past_due"
-              //                 ? "warning"
-              //                 : "neutral"
-              //         }
-              //       />
-              //     );
-              //   },
-              // },
-              // // {
-              // //   key: "usageMinutes",
-              // //   label: "Plan Usage",
-              // //   render: (v, row) =>
-              // //     v != null && row.totalMinutes
-              // //       ? minutesBar(v as number, row.totalMinutes as number)
-              // //       : <span className="text-slate-400">—</span>,
-              // // },
-              // // {
-              // //   key: "usageMinutes",
-              // //   label: "CDR Usage",
-              // //   render: (v) => (
-              // //     <span className="text-sm text-slate-700">{v as number} min</span>
-              // //   ),
-              // // },
-              // {
-              //   key: "usageMinutes",
-              //   label: "Usage (CDR / Plan)",
-              //   render: (v, row) => {
-              //     const used = v as number;
-              //     const total = row.totalMinutes as number;
-
-              //     return (
-              //       <div className="flex items-center gap-3">
-              //         {/* Bar */}
-              //         {total ? (
-              //           minutesBar(used, total)
-              //         ) : (
-              //           <span className="text-slate-400">—</span>
-              //         )}
-
-              //         {/* Text */}
-              //         {/* <span className="text-xs text-slate-500 whitespace-nowrap">
-              //           {used} min used
-              //         </span> */}
-              //       </div>
-              //     );
-              //   },
-              // },
-              // { key: "monthlyPrice", label: "Monthly" },
               {
                 key: "createdAt",
                 label: "Joined",
                 render: (v) => formatDateTime(String(v)),
               },
+              {
+                key: "_customer",
+                label: "Actions",
+                render: (v) => (
+                  <button
+                    onClick={() => setEditingCustomer(v as AdminCustomer)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </button>
+                ),
+              },
             ]}
           />
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingCustomer && (
+        <AdminCustomerEditModal
+          customer={editingCustomer}
+          onClose={() => setEditingCustomer(null)}
+        />
+      )}
     </AdminPermissionGuard>
   );
 }
