@@ -11,6 +11,7 @@ import { AdminPermissionGuard } from "@/components/admin/shared/admin-permission
 import { useAdminBillingQuery } from "@/hooks/admin/use-admin-billing-query";
 import { AdminUserBilling } from "@/services/admin/adminBillingService";
 import { formatDate } from "@/utils/format";
+import { AdminPendingBillsSection } from "@/components/admin/billing/admin-pending-bills-section";
 
 function minutesPercent(used: number, total: number) {
   if (!total) return 0;
@@ -70,7 +71,7 @@ function BillingCard({ user }: { user: AdminUserBilling }) {
             <div className="flex items-center justify-between text-xs text-slate-500">
               <span>Plan Minutes Used</span>
               <span>
-                {user.usageMinutes} / {sub.totalMinutes} min ({pct}%)
+                {sub.minutesUsed} / {sub.totalMinutes} min ({pct}%)
               </span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -139,6 +140,9 @@ export function AdminBillingShell() {
           title="Billing"
           description="Subscription and billing overview for all customers."
         />
+
+        {/* ── Pending overage bills ── */}
+        <AdminPendingBillsSection />
 
         {/* Search */}
         <div className="relative max-w-sm">

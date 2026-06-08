@@ -13,6 +13,7 @@ import { RenewalModal } from "@/components/billing/renewal-modal";
 import { useRenewal } from "@/hooks/use-renewal";
 import { formatDate } from "@/utils/format";
 import { CreditCard, Clock, Calendar, Zap, RefreshCw, History } from "lucide-react";
+import { PendingBillsSection } from "@/components/billing/pending-bills-section";
 
 type SubscriptionRecord = {
   id: string;
@@ -107,6 +108,9 @@ export function BillingShell() {
             endsAt={data.subscription.endsAt}
             onRenew={renewal.open}
           />
+
+          {/* ── Pending overage bills ── */}
+          <PendingBillsSection />
 
           {/* ── Current subscription cards ── */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
