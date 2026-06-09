@@ -6,20 +6,12 @@ import { verifyRequestJwt } from "@/lib/jwt-auth";
 /**
  * GET /api/billing/pending-bills
  *
- * Returns pending overage invoices for the authenticated user.
+ * Returns pending overage invoices for the authenticated customer.
+ * Uses SERVICE ROLE key — bypasses RLS on the subscriptions table.
  *
- * An overage invoice is generated whenever minutes_used > total_minutes_snapshot,
- * regardless of whether the subscription is still active or already expired.
- *
- * If the subscription is ACTIVE and over-limit → "active_overage" warning shown.
- * If the subscription is EXPIRED and over-limit → "pending" invoice shown.
- *
- * De-duplication: if a record already exists in pending_overage_invoices for
- * that subscription_id, we use its stored status (pending / paid / dismissed)
- * so a settled invoice never reappears.
- *
- * Auto-upsert: if no invoice record exists yet and overage is detected, we
- * insert one automatically so it persists across page loads.
+ * Overage rule: minutes_used > total_minutes_snapshot on ANY subscription
+ * (active OR expired). Does NOT require the pending_overage_invoices table
+ * to exist — degrades gracefully if it's missing.
  */
 export async function GET(req: NextRequest) {
   const payload = await verifyRequestJwt(req);
@@ -27,13 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Service-role client — bypasses RLS
   const supabase = createServerSupabaseClient();
+  const userId = payload.sub;
 
-  // ── 1. Fetch ALL subscriptions for this user (active + expired) ──────────
-  const { data: subs, error } = await supabase
+  // ── 1. Fetch all subscriptions for this user ───────────────────────────────
+  const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
     .select(`
       id,
+      user_id,
       status,
       started_at,
       ends_at,
@@ -43,19 +38,22 @@ export async function GET(req: NextRequest) {
       total_minutes_snapshot,
       plans ( display_name )
     `)
-    .eq("user_id", payload.sub)
+    .eq("user_id", userId)
     .in("status", ["active", "expired", "past_due"])
     .order("ends_at", { ascending: false });
 
-  if (error) {
-    console.error("[GET /api/billing/pending-bills]", error);
-    return NextResponse.json({ error: "Failed to fetch pending bills." }, { status: 500 });
+  if (subsError) {
+    console.error("[customer pending-bills] subscriptions fetch error:", subsError);
+    return NextResponse.json(
+      { error: "Failed to fetch subscriptions.", detail: subsError.message },
+      { status: 500 }
+    );
   }
 
-  // ── 2. Filter to only subscriptions that are actually over the limit ──────
+  // ── 2. Keep only over-limit subscriptions ─────────────────────────────────
   const overageSubs = (subs ?? []).filter((sub: any) => {
-    const used = parseFloat(sub.minutes_used ?? "0");
-    const total = parseFloat(sub.total_minutes_snapshot ?? "0");
+    const used = Number(sub.minutes_used ?? 0);
+    const total = Number(sub.total_minutes_snapshot ?? 0);
     return total > 0 && used > total;
   });
 
@@ -63,82 +61,94 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ pendingBills: [] });
   }
 
-  // ── 3. Load any existing invoice records for these subscriptions ──────────
-  const subIds = overageSubs.map((s: any) => s.id);
-
-  const { data: existingInvoices } = await supabase
-    .from("pending_overage_invoices")
-    .select("*")
-    .eq("user_id", payload.sub)
-    .in("subscription_id", subIds);
-
+  // ── 3. Try to load / upsert invoice records (graceful if table missing) ────
+  const subIds = overageSubs.map((s: any) => s.id as string);
   const invoiceMap: Record<string, any> = {};
-  (existingInvoices ?? []).forEach((inv: any) => {
-    invoiceMap[inv.subscription_id] = inv;
-  });
+  let invoiceTableExists = true;
 
-  // ── 4. Auto-upsert: create invoice records for any overage not yet recorded ─
-  const toInsert = overageSubs
-    .filter((sub: any) => !invoiceMap[sub.id])
-    .map((sub: any) => {
-      const used = parseFloat(sub.minutes_used ?? "0");
-      const total = parseFloat(sub.total_minutes_snapshot ?? "0");
-      const pricePerMinute = parseFloat(sub.price_per_minute_snapshot ?? "0");
-      const overageMinutes = Math.max(0, used - total);
-      return {
-        user_id: payload.sub,
-        subscription_id: sub.id,
-        status: "pending",
-        overage_minutes: overageMinutes,
-        overage_amount: overageMinutes * pricePerMinute,
-        price_per_minute: pricePerMinute,
-        plan_name: sub.plans?.display_name ?? "—",
-        period_start: sub.started_at,
-        period_end: sub.ends_at,
-      };
-    });
-
-  if (toInsert.length > 0) {
-    const { data: inserted, error: insertErr } = await supabase
+  try {
+    const { data: existingInvoices, error: invFetchErr } = await supabase
       .from("pending_overage_invoices")
-      .insert(toInsert)
-      .select();
+      .select("id, subscription_id, status, created_at")
+      .eq("user_id", userId)
+      .in("subscription_id", subIds);
 
-    if (insertErr) {
-      console.error("[pending-bills] auto-insert error:", insertErr);
+    if (invFetchErr) {
+      console.warn("[customer pending-bills] invoice table unavailable:", invFetchErr.message);
+      invoiceTableExists = false;
     } else {
-      // Merge newly inserted records into the map
-      (inserted ?? []).forEach((inv: any) => {
+      (existingInvoices ?? []).forEach((inv: any) => {
         invoiceMap[inv.subscription_id] = inv;
       });
+
+      // Auto-upsert missing invoice records
+      const toInsert = overageSubs
+        .filter((sub: any) => !invoiceMap[sub.id])
+        .map((sub: any) => {
+          const used = Number(sub.minutes_used ?? 0);
+          const total = Number(sub.total_minutes_snapshot ?? 0);
+          const ppm = Number(sub.price_per_minute_snapshot ?? 0);
+          const overageMin = Math.max(0, used - total);
+          return {
+            user_id: userId,
+            subscription_id: sub.id,
+            status: "pending",
+            overage_minutes: overageMin,
+            overage_amount: parseFloat((overageMin * ppm).toFixed(4)),
+            price_per_minute: ppm,
+            plan_name: (sub.plans as any)?.display_name ?? "—",
+            period_start: sub.started_at,
+            period_end: sub.ends_at,
+          };
+        });
+
+      if (toInsert.length > 0) {
+        const { data: inserted, error: insertErr } = await supabase
+          .from("pending_overage_invoices")
+          .insert(toInsert)
+          .select("id, subscription_id, status, created_at");
+
+        if (insertErr) {
+          console.error("[customer pending-bills] auto-insert error:", insertErr.message);
+        } else {
+          (inserted ?? []).forEach((inv: any) => {
+            invoiceMap[inv.subscription_id] = inv;
+          });
+        }
+      }
     }
+  } catch (e: any) {
+    console.warn("[customer pending-bills] invoice table check failed:", e?.message);
+    invoiceTableExists = false;
   }
 
-  // ── 5. Build response — skip paid/dismissed invoices ─────────────────────
+  // ── 4. Build response ──────────────────────────────────────────────────────
   const pendingBills = overageSubs
     .map((sub: any) => {
-      const used = parseFloat(sub.minutes_used ?? "0");
-      const total = parseFloat(sub.total_minutes_snapshot ?? "0");
-      const pricePerMinute = parseFloat(sub.price_per_minute_snapshot ?? "0");
-      const overageMinutes = Math.max(0, used - total);
-      const overageAmount = overageMinutes * pricePerMinute;
+      const used = Number(sub.minutes_used ?? 0);
+      const total = Number(sub.total_minutes_snapshot ?? 0);
+      const ppm = Number(sub.price_per_minute_snapshot ?? 0);
+      const overageMin = Math.max(0, used - total);
+      const overageAmount = parseFloat((overageMin * ppm).toFixed(4));
       const existingInv = invoiceMap[sub.id];
+      const invoiceStatus = existingInv?.status ?? "pending";
 
       return {
-        invoiceId: existingInv?.id ?? `overage-${sub.id}`,
+        invoiceId: existingInv?.id ?? `tmp-${sub.id}`,
         subscriptionId: sub.id,
-        subscriptionStatus: sub.status, // "active" | "expired" | "past_due"
-        planName: sub.plans?.display_name ?? "—",
-        invoiceStatus: existingInv?.status ?? "pending",
-        periodStart: sub.started_at,
-        periodEnd: sub.ends_at,
+        subscriptionStatus: sub.status as string,
+        planName: (sub.plans as any)?.display_name ?? "—",
+        invoiceStatus,
+        periodStart: sub.started_at as string,
+        periodEnd: sub.ends_at as string | null,
         allocatedMinutes: total,
         usedMinutes: used,
-        overageMinutes,
-        pricePerMinute,
+        overageMinutes: overageMin,
+        pricePerMinute: ppm,
         overageAmount,
-        monthlyPrice: parseFloat(sub.monthly_price_snapshot ?? "0"),
+        monthlyPrice: Number(sub.monthly_price_snapshot ?? 0),
         generatedAt: existingInv?.created_at ?? new Date().toISOString(),
+        invoiceTableExists,
       };
     })
     .filter((bill) => bill.invoiceStatus === "pending");
