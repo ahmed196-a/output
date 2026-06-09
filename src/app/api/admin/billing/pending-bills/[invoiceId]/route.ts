@@ -6,10 +6,10 @@ type Action = "mark_paid" | "waive_off";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { invoiceId: string } }
+  { params }: { params: Promise<{ invoiceId: string }> }
 ) {
   const supabase = createServerSupabaseClient();
-  const invoiceId = params.invoiceId;
+  const invoiceId = (await params).invoiceId;
 
   let body: { action: Action };
   try {
