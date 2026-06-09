@@ -3,7 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { AlertCircle, AlertTriangle, Clock, FileText, Receipt } from "lucide-react";
+import { AlertCircle, AlertTriangle, Clock, FileText, Receipt,CreditCard } from "lucide-react";
 import { formatDate } from "@/utils/format";
 
 type PendingBill = {
@@ -28,55 +28,49 @@ type PendingBillsResponse = {
 };
 
 function InvoiceCard({ bill }: { bill: PendingBill }) {
-  const isActive = bill.subscriptionStatus === "active";
-
   return (
     <div
       className="rounded-2xl bg-white overflow-hidden"
       style={{
         boxShadow: "var(--shadow-sm)",
-        border: `1px solid ${isActive ? "rgba(234,179,8,0.3)" : "rgba(239,68,68,0.25)"}`,
+        border: "1px solid rgba(234,179,8,0.3)",
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3"
         style={{
-          background: isActive ? "rgba(234,179,8,0.06)" : "rgba(239,68,68,0.06)",
-          borderBottom: `1px solid ${isActive ? "rgba(234,179,8,0.15)" : "rgba(239,68,68,0.15)"}`,
+          background: "rgba(234,179,8,0.06)",
+          borderBottom: "1px solid rgba(234,179,8,0.15)",
         }}
       >
         <div className="flex items-center gap-2">
-          <Receipt className={`h-4 w-4 ${isActive ? "text-amber-500" : "text-rose-500"}`} />
-          <span className={`text-xs font-semibold uppercase tracking-wider ${isActive ? "text-amber-600" : "text-rose-600"}`}>
-            {isActive ? "Active Overage Invoice" : "Overage Invoice"}
+          <Receipt className="h-4 w-4 text-amber-500" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+            Active Overage Invoice
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {isActive && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-600">
-              SUBSCRIPTION ACTIVE
-            </span>
-          )}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${isActive ? "bg-rose-100 text-rose-600" : "bg-rose-100 text-rose-600"}`}>
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-600">
+            SUBSCRIPTION ACTIVE
+          </span>
+          <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600">
             PENDING
           </span>
         </div>
       </div>
 
       {/* Active overage notice */}
-      {isActive && (
-        <div
-          className="flex items-start gap-2 px-5 py-2.5 text-xs text-amber-700"
-          style={{ background: "rgba(234,179,8,0.07)", borderBottom: "1px solid rgba(234,179,8,0.12)" }}
-        >
-          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
-          <span>
-            Your subscription is still active but you have already exceeded your plan's minute limit.
-            This overage is being tracked and billed now.
-          </span>
-        </div>
-      )}
+      <div
+        className="flex items-start gap-2 px-5 py-2.5 text-xs text-amber-700"
+        style={{ background: "rgba(234,179,8,0.07)", borderBottom: "1px solid rgba(234,179,8,0.12)" }}
+      >
+        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+        <span>
+          Your subscription is active but you've exceeded your plan's minute limit.
+          This overage is being tracked and updated in real-time.
+        </span>
+      </div>
 
       {/* Body */}
       <div className="p-5 space-y-4">
@@ -116,8 +110,6 @@ function InvoiceCard({ bill }: { bill: PendingBill }) {
               <p className="text-[10px] text-slate-400 mt-0.5">Overage</p>
             </div>
           </div>
-
-          {/* Overage bar — can exceed 100% */}
           <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden mt-1">
             <div
               className="h-full rounded-full bg-rose-500 transition-all"
@@ -127,8 +119,7 @@ function InvoiceCard({ bill }: { bill: PendingBill }) {
             />
           </div>
           <p className="text-xs text-rose-500 font-medium">
-            {Math.round((bill.usedMinutes / bill.allocatedMinutes) * 100)}% of plan used
-            {bill.usedMinutes > bill.allocatedMinutes && " — limit exceeded"}
+            {Math.round((bill.usedMinutes / bill.allocatedMinutes) * 100)}% of plan used — limit exceeded
           </p>
         </div>
 
@@ -156,16 +147,19 @@ function InvoiceCard({ bill }: { bill: PendingBill }) {
           </span>
         </div>
 
-        {/* Contact admin notice */}
-        <div
-          className="flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs text-amber-700"
-          style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}
+        {/* Pay Now button */}
+        <button
+          disabled
+          title="Contact your administrator to settle this overage invoice"
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-opacity cursor-not-allowed opacity-60"
+          style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}
         >
-          <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
-          <span>
-            Please contact your administrator to settle this overage invoice.
-          </span>
-        </div>
+          <CreditCard className="h-4 w-4" />
+          Pay Now — ${bill.overageAmount.toFixed(2)}
+        </button>
+        <p className="text-center text-[10px] text-slate-400">
+          Contact your administrator to settle this invoice
+        </p>
       </div>
     </div>
   );
@@ -178,6 +172,7 @@ export function PendingBillsSection() {
       const res = await apiClient.get<PendingBillsResponse>("/billing/pending-bills");
       return res.data;
     },
+    refetchInterval: 60_000, // refresh every minute to keep overage live
   });
 
   const bills = data?.pendingBills ?? [];
@@ -195,9 +190,6 @@ export function PendingBillsSection() {
   }
 
   if (error || bills.length === 0) return null;
-
-  const activeOverages = bills.filter((b) => b.subscriptionStatus === "active");
-  const expiredOverages = bills.filter((b) => b.subscriptionStatus !== "active");
 
   return (
     <div className="space-y-4">
@@ -217,9 +209,10 @@ export function PendingBillsSection() {
             {bills.length} Pending Bill{bills.length > 1 ? "s" : ""}
           </p>
           <p className="text-xs text-rose-400">
-            {activeOverages.length > 0 && `${activeOverages.length} on active subscription · `}
-            {expiredOverages.length > 0 && `${expiredOverages.length} from expired subscriptions · `}
-            Total due: <span className="font-semibold">${bills.reduce((s, b) => s + b.overageAmount, 0).toFixed(2)}</span>
+            Total due:{" "}
+            <span className="font-semibold">
+              ${bills.reduce((s, b) => s + b.overageAmount, 0).toFixed(2)}
+            </span>
           </p>
         </div>
         <span className="ml-auto rounded-full bg-rose-500 px-2.5 py-0.5 text-xs font-bold text-white">

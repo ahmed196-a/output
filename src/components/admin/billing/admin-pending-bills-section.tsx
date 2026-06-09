@@ -2,8 +2,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, AlertTriangle, ChevronDown, ChevronUp, FileText, Receipt, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
+  Download, FileText, Receipt, Search, XCircle,
+} from "lucide-react";
 import { formatDate } from "@/utils/format";
 
 type PendingBill = {
@@ -15,7 +18,7 @@ type PendingBill = {
   userEmail: string;
   userRole: string;
   planName: string;
-  invoiceStatus: "pending" | "paid" | "dismissed";
+  invoiceStatus: "pending" | "paid" | "waived";
   periodStart: string;
   periodEnd: string | null;
   allocatedMinutes: number;
@@ -46,42 +49,91 @@ function SubscriptionStatusPill({ status }: { status: string }) {
   );
 }
 
+function useInvoiceAction(invoiceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (action: "mark_paid" | "waive_off") => {
+      const res = await fetch(`/api/admin/billing/pending-bills/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error("Action failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "billing", "pending-bills"] });
+    },
+  });
+}
+
 function AdminInvoiceRow({ bill }: { bill: PendingBill }) {
   const [expanded, setExpanded] = useState(false);
   const isActive = bill.subscriptionStatus === "active";
+  const { mutate: doAction, isPending } = useInvoiceAction(bill.invoiceId);
+
+  const handleDownload = () => {
+    // Build a simple text invoice and trigger download
+    const lines = [
+      `OVERAGE INVOICE`,
+      `Invoice ID: ${bill.invoiceId}`,
+      `Generated: ${formatDate(bill.generatedAt)}`,
+      ``,
+      `Customer: ${bill.userName} (${bill.userEmail})`,
+      `Plan: ${bill.planName}`,
+      `Period: ${formatDate(bill.periodStart)} → ${bill.periodEnd ? formatDate(bill.periodEnd) : "present"}`,
+      ``,
+      `Plan Minutes: ${bill.allocatedMinutes}`,
+      `Minutes Used: ${bill.usedMinutes}`,
+      `Overage Minutes: ${bill.overageMinutes}`,
+      `Rate: $${bill.pricePerMinute.toFixed(4)}/min`,
+      ``,
+      `AMOUNT DUE: $${bill.overageAmount.toFixed(2)}`,
+      `Status: PENDING`,
+    ].join("\n");
+
+    const blob = new Blob([lines], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `invoice-${bill.invoiceId.slice(-8).toUpperCase()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
       <tr
-        className="cursor-pointer transition-colors hover:bg-rose-50/40"
+        className="transition-colors hover:bg-rose-50/40"
         style={{
           borderBottom: "1px solid var(--border-light)",
           background: isActive ? "rgba(234,179,8,0.02)" : undefined,
         }}
-        onClick={() => setExpanded((v) => !v)}
       >
         {/* User */}
-        <td className="px-5 py-3.5">
+        <td className="px-5 py-3.5 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           <div>
             <p className="text-sm font-semibold text-slate-800">{bill.userName}</p>
             <p className="text-xs text-slate-400">{bill.userEmail}</p>
           </div>
         </td>
         {/* Plan */}
-        <td className="px-5 py-3.5 text-sm text-slate-600">{bill.planName}</td>
+        <td className="px-5 py-3.5 text-sm text-slate-600 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
+          {bill.planName}
+        </td>
         {/* Sub status */}
-        <td className="px-5 py-3.5">
+        <td className="px-5 py-3.5 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           <SubscriptionStatusPill status={bill.subscriptionStatus} />
         </td>
         {/* Period */}
-        <td className="px-5 py-3.5 text-xs text-slate-500">
+        <td className="px-5 py-3.5 text-xs text-slate-500 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           <div>{formatDate(bill.periodStart)}</div>
           <div className="text-slate-400">
             → {bill.periodEnd ? formatDate(bill.periodEnd) : "present"}
           </div>
         </td>
         {/* Overage */}
-        <td className="px-5 py-3.5">
+        <td className="px-5 py-3.5 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           <span className="text-sm font-semibold text-rose-600">
             +{bill.overageMinutes} min
           </span>
@@ -90,19 +142,47 @@ function AdminInvoiceRow({ bill }: { bill: PendingBill }) {
           </div>
         </td>
         {/* Amount */}
-        <td className="px-5 py-3.5">
+        <td className="px-5 py-3.5 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           <span className="text-base font-bold text-rose-600">
             ${bill.overageAmount.toFixed(2)}
           </span>
         </td>
-        {/* Invoice status */}
+        {/* Actions */}
         <td className="px-5 py-3.5">
-          <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600">
-            PENDING
-          </span>
+          <div className="flex items-center gap-1.5">
+            {/* Download */}
+            <button
+              onClick={handleDownload}
+              title="Download Invoice"
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Download</span>
+            </button>
+            {/* Mark as Paid */}
+            <button
+              disabled={isPending}
+              onClick={() => doAction("mark_paid")}
+              title="Mark as Paid"
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Mark Paid</span>
+            </button>
+            {/* Waive Off */}
+            <button
+              disabled={isPending}
+              onClick={() => doAction("waive_off")}
+              title="Waive Off Invoice"
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-50"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Waive Off</span>
+            </button>
+          </div>
         </td>
         {/* Expand toggle */}
-        <td className="px-5 py-3.5 text-slate-400">
+        <td className="px-3 py-3.5 text-slate-400 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </td>
       </tr>
@@ -118,9 +198,8 @@ function AdminInvoiceRow({ bill }: { bill: PendingBill }) {
               >
                 <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
                 <span>
-                  This customer's subscription is <strong>still active</strong> but they have already
-                  exceeded their plan's minute limit. The overage invoice was auto-generated and will
-                  grow if they continue making calls.
+                  This customer's subscription is <strong>still active</strong> — the overage amount
+                  updates automatically as they continue making calls.
                 </span>
               </div>
             )}
@@ -177,13 +256,11 @@ function AdminInvoiceRow({ bill }: { bill: PendingBill }) {
                     <span className="font-semibold text-slate-800">${bill.monthlyPrice.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Period Start</span>
-                    <span className="font-semibold text-slate-800">{formatDate(bill.periodStart)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Period End</span>
-                    <span className="font-semibold text-slate-800">
-                      {bill.periodEnd ? formatDate(bill.periodEnd) : "—"}
+                    <span className="text-slate-500">Period</span>
+                    <span className="font-semibold text-slate-800 text-right">
+                      {formatDate(bill.periodStart)}
+                      {" → "}
+                      {bill.periodEnd ? formatDate(bill.periodEnd) : "present"}
                     </span>
                   </div>
                 </div>
@@ -220,7 +297,6 @@ function AdminInvoiceRow({ bill }: { bill: PendingBill }) {
     </>
   );
 }
-
 function AdminInvoiceMobileCard({ bill }: { bill: PendingBill }) {
   const [expanded, setExpanded] = useState(false);
   const isActive = bill.subscriptionStatus === "active";
@@ -400,7 +476,7 @@ export function AdminPendingBillsSection() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
-                  {["Customer", "Plan", "Sub Status", "Period", "Overage", "Amount Due", "Invoice", ""].map((h) => (
+                  {["Customer", "Plan", "Sub Status", "Period", "Overage", "Amount Due", "Actions", ""].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
