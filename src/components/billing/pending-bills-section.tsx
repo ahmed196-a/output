@@ -169,7 +169,7 @@ export function PendingBillsSection() {
   const { data, isLoading, error } = useQuery<PendingBillsResponse>({
     queryKey: ["billing", "pending-bills"],
     queryFn: async () => {
-      const res = await apiClient.get<PendingBillsResponse>("/billing/pending-bills");
+      const res = await apiClient.get<PendingBillsResponse>("api/billing/pending-bills");
       return res.data;
     },
     refetchInterval: 60_000, // refresh every minute to keep overage live
