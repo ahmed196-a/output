@@ -71,7 +71,7 @@ export function BillingShell() {
   const { data, isLoading, error } = useQuery<SubscriptionData>({
     queryKey: ["billing", "subscription"],
     queryFn: async () => {
-      const res = await apiClient.get<SubscriptionData>("api/billing/subscription");
+      const res = await apiClient.get<SubscriptionData>("/billing/subscription");
       return res.data;
     },
   });

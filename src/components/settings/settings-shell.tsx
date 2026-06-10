@@ -90,7 +90,7 @@ export function SettingsShell() {
 
   const profileMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiClient.patch("api/user/profile", { fullName, email });
+      const res = await apiClient.patch("/user/profile", { fullName, email });
       return res.data;
     },
     onSuccess: () => {
@@ -113,7 +113,7 @@ export function SettingsShell() {
 
   const passwordMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiClient.post("api/user/change-password", {
+      const res = await apiClient.post("/user/change-password", {
         currentPassword: current,
         newPassword: next,
       });

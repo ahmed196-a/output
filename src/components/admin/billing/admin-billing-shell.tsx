@@ -27,7 +27,7 @@ function subStatusVariant(status: string) {
 
 function BillingCard({ user }: { user: AdminUserBilling }) {
   const sub = user.subscription;
-  const pct = sub ? minutesPercent(user.usageMinutes, sub.totalMinutes) : 0;
+  const pct = sub ? minutesPercent(sub.minutesUsed, sub.totalMinutes) : 0;
 
   return (
     <div

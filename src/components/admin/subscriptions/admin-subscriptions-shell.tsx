@@ -494,10 +494,10 @@ export function AdminSubscriptionsShell() {
                       <td className="px-4 py-3 min-w-[180px]">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs text-slate-600">
-                            <span>{sub.usageMinutes} min (CDR)</span>
+                            <span>{sub.minutesUsed} min (CDR)</span>
                             <span>
                               {sub.totalMinutes
-                                ? `${Math.round((sub.usageMinutes / sub.totalMinutes) * 100)}%`
+                                ? `${Math.round((sub.minutesUsed / sub.totalMinutes) * 100)}%`
                                 : "—"}
                             </span>
                           </div>
@@ -510,7 +510,7 @@ export function AdminSubscriptionsShell() {
                                     ? `${Math.min(
                                         100,
                                         Math.round(
-                                          (sub.usageMinutes /
+                                          (sub.minutesUsed /
                                             sub.totalMinutes) *
                                             100,
                                         ),

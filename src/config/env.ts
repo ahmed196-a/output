@@ -25,7 +25,7 @@ const readEnv = (key: string, fallback?: string): string => {
 };
 
 export const env = {
-  get apiBaseUrl() { return readEnv("NEXT_PUBLIC_API_BASE_URL", ""); },
+  get apiBaseUrl() { return readEnv("NEXT_PUBLIC_API_BASE_URL", "/api"); },
   get apiTimeoutMs() { return Number(readEnv("NEXT_PUBLIC_API_TIMEOUT_MS", "10000")); },
   get enableMockFallback() { return readEnv("NEXT_PUBLIC_ENABLE_MOCK_FALLBACK", "true") === "true"; },
   get tenantHeaderKey() { return readEnv("NEXT_PUBLIC_TENANT_HEADER_KEY", "x-tenant-id"); },
