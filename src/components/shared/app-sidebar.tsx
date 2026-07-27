@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PhoneCall, Settings, Receipt, X, Building2 } from "lucide-react";
+import { LayoutDashboard, PhoneCall, Settings, Receipt, X, Building2, Phone, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui-store";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { useAuthStore } from "@/store/auth-store";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboard },
-  { href: "/call-logs", label: "Call Logs",   icon: PhoneCall },
-  { href: "/billing",   label: "Billing",     icon: Receipt },
-  { href: "/settings",  label: "Settings",    icon: Settings },
+  { href: "/dashboard",     label: "Dashboard",     icon: LayoutDashboard },
+  { href: "/phone-numbers", label: "Phone Numbers", icon: Phone },
+  { href: "/agents",        label: "Voice Agents",  icon: Bot },
+  { href: "/call-logs",     label: "Call Logs",      icon: PhoneCall },
+  { href: "/billing",       label: "Billing",        icon: Receipt },
+  { href: "/settings",      label: "Settings",       icon: Settings },
 ];
 
 export function AppSidebar() {

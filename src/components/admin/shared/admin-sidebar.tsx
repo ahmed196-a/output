@@ -14,6 +14,7 @@ import {
   X,
   PhoneCall,
   Users,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/admin/use-admin-role";
@@ -30,13 +31,14 @@ type AdminNavItem = {
 
 const adminNavItems: AdminNavItem[] = [
   { href: "/admin/overview",      label: "Overview",      icon: LayoutDashboard, permission: "overview" },
+  { href: "/admin/phone-numbers", label: "Phone Numbers", icon: Phone,           permission: "overview" },
+  { href: "/admin/agents",        label: "Voice Agents",  icon: Bot,             permission: "agents" },
   { href: "/admin/customers",     label: "Customers",     icon: Building2,       permission: "customers" },
   { href: "/admin/resellers",     label: "Resellers",     icon: Users,           permission: "resellers" },
   { href: "/admin/call-logs",     label: "Call Logs",     icon: PhoneCall,       permission: "call_logs" },
   { href: "/admin/plans",         label: "Plans",         icon: Layers,          permission: "plans" },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard,      permission: "subscriptions" },
   { href: "/admin/billing",       label: "Billing",       icon: Receipt,         permission: "billing" },
-  { href: "/admin/agents",        label: "Agent Access",  icon: Bot,             permission: "agents" },
 ];
 
 export function AdminSidebar() {
