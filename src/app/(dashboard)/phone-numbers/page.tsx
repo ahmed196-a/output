@@ -523,7 +523,7 @@ export default function PhoneNumbersPage() {
                       </td>
                       <td>
                         <span className="px-2.5 py-1 text-xs rounded-full bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] capitalize">
-                          {num.type.replace("_", " ")}
+                          {(num.type || "").replace("_", " ")}
                         </span>
                       </td>
                       <td>

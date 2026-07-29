@@ -1,10 +1,7 @@
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { agentsService } from "@/services/agents-service";
-import { formatDuration } from "@/utils/format";
-import { getAgentStatusVariant } from "@/utils/status";
+import { AgentEditorShell } from "@/components/agents/editor/agent-editor-shell";
+import { getRetellAgent } from "@/lib/retell-api";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 type AgentDetailPageProps = {
   params: Promise<{
@@ -14,44 +11,53 @@ type AgentDetailPageProps = {
 
 export default async function AgentDetailPage({ params }: AgentDetailPageProps) {
   const { agentId } = await params;
-  const agent = await agentsService.getAgentById(agentId);
 
-  if (!agent) {
+  let agentData: any = null;
+
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: dbRow } = await supabase
+      .from("agents")
+      .select("*")
+      .or(`id.eq.${agentId},retell_agent_id.eq.${agentId}`)
+      .single();
+
+    if (dbRow) {
+      try {
+        const live = await getRetellAgent(dbRow.retell_agent_id || agentId);
+        agentData = {
+          ...dbRow,
+          ...live,
+          id: dbRow.id,
+          agent_id: dbRow.retell_agent_id || agentId,
+          name: live.agent_name || dbRow.name,
+        };
+      } catch {
+        agentData = {
+          ...dbRow,
+          agent_id: dbRow.retell_agent_id || agentId,
+        };
+      }
+    } else {
+      const live = await getRetellAgent(agentId);
+      agentData = {
+        id: live.agent_id,
+        agent_id: live.agent_id,
+        name: live.agent_name || "Voice Agent",
+        voice_id: live.voice_id || "retell-Cimo",
+        language: live.language || "en-US",
+        response_engine: live.response_engine || { type: "retell-llm" },
+        begin_message: live.begin_message || "",
+        general_prompt: live.general_prompt || "",
+      };
+    }
+  } catch (err) {
+    console.error("[AgentDetailPage Error]", err);
+  }
+
+  if (!agentData) {
     notFound();
   }
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={agent.name}
-        description="Individual AI agent details, operational status, and performance summary."
-      />
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Calls" value={String(agent.totalCalls)} />
-        <StatCard label="Answer Rate" value={`${agent.answerRate}%`} />
-        <StatCard label="Avg Duration" value={formatDuration(agent.avgDurationSeconds)} />
-      </section>
-
-      <section className="rounded-xl border bg-white p-5 shadow-sm">
-        <h3 className="text-base font-semibold text-slate-900">Agent Configuration</h3>
-        <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-          <p>
-            <span className="font-medium text-slate-900">Agent ID:</span> {agent.id}
-          </p>
-          <p>
-            <span className="font-medium text-slate-900">Phone Number:</span> {agent.phoneNumber}
-          </p>
-          <p className="flex items-center gap-2">
-            <span className="font-medium text-slate-900">Status:</span>
-            <StatusBadge text={agent.status} variant={getAgentStatusVariant(agent.status)} />
-          </p>
-          <p className="flex items-center gap-2">
-            <span className="font-medium text-slate-900">Campaign:</span>
-            <StatusBadge text={agent.campaignStatus} variant="neutral" />
-          </p>
-        </div>
-      </section>
-    </div>
-  );
+  return <AgentEditorShell agent={agentData} />;
 }

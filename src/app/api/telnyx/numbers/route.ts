@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRequestJwt } from '@/lib/jwt-auth';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getPurchasedNumbers, isTelnyxConfigured } from '@/lib/telnyx-api';
 
 async function getFallbackUserId(): Promise<string | null> {
   try {
@@ -20,6 +21,12 @@ export async function GET(req: NextRequest) {
 
     if (!userId) {
       userId = await getFallbackUserId();
+    }
+
+    // Fallback to mock active numbers in Sandbox/Development mode
+    if (!isTelnyxConfigured()) {
+      const mockNumbersList = await getPurchasedNumbers();
+      return NextResponse.json(mockNumbersList);
     }
 
     if (userId) {

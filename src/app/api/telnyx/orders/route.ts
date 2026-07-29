@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createNumberOrder } from '@/lib/telnyx-api';
-import { verifyRequestJwt } from '@/lib/jwt-auth';
+import { createNumberOrder, getOrders, isTelnyxConfigured } from '@/lib/telnyx-api';
+import { verifyRequestJwt, requireRole } from '@/lib/jwt-auth';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 async function getFallbackUserId(): Promise<string | null> {
@@ -17,37 +17,53 @@ async function getFallbackUserId(): Promise<string | null> {
 export async function GET(req: NextRequest) {
   try {
     const payload = await verifyRequestJwt(req);
-    let userId = payload?.sub || null;
+    const isAdmin = payload && requireRole(payload, ['super_admin', 'admin', 'operations']);
 
-    if (!userId) {
-      userId = await getFallbackUserId();
+    // Fallback to mock orders in Sandbox/Development mode
+    if (!isTelnyxConfigured()) {
+      const mockOrdersList = await getOrders();
+      // Map mock orders to include user details for admin display
+      const mappedMocks = mockOrdersList.map((o: any) => ({
+        ...o,
+        userEmail: o.customerReference === 'REF-UK-BRANCH' ? 'customer@example.com' : 'admin@callautomate.ai',
+        userName: o.customerReference === 'REF-UK-BRANCH' ? 'Jane Doe' : 'Administrator',
+      }));
+      return NextResponse.json(mappedMocks);
     }
 
-    if (userId) {
-      try {
-        const supabase = createServerSupabaseClient();
-        const { data: dbOrders, error } = await supabase
-          .from('phone_orders')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+    const supabase = createServerSupabaseClient();
+    let query = supabase.from('phone_orders').select(`
+      *,
+      users:user_id (id, email, full_name)
+    `);
 
-        if (!error && dbOrders) {
-          const userOrders = dbOrders.map((o: any) => ({
-            id: o.order_id,
-            status: o.status,
-            createdAt: o.created_at,
-            phoneNumbers: [o.phone_number],
-            requirementsMet: o.requirements_met,
-            subOrderIds: o.sub_order_ids || [],
-            customerReference: o.customer_reference,
-            userId: o.user_id,
-          }));
-          return NextResponse.json(userOrders);
-        }
-      } catch (e) {
-        console.warn('[Orders DB Query Warning]', e);
+    // If not an admin, only show the user's own orders
+    if (!isAdmin) {
+      let userId = payload?.sub || null;
+      if (!userId) {
+        userId = await getFallbackUserId();
       }
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+    }
+
+    const { data: dbOrders, error } = await query.order('created_at', { ascending: false });
+
+    if (!error && dbOrders) {
+      const userOrders = dbOrders.map((o: any) => ({
+        id: o.order_id,
+        status: o.status,
+        createdAt: o.created_at,
+        phoneNumbers: [o.phone_number],
+        requirementsMet: o.requirements_met,
+        subOrderIds: o.sub_order_ids || [],
+        customerReference: o.customer_reference,
+        userId: o.user_id,
+        userEmail: o.users?.email || 'System / Unknown',
+        userName: o.users?.full_name || 'System / Unknown',
+      }));
+      return NextResponse.json(userOrders);
     }
 
     return NextResponse.json([]);
@@ -63,26 +79,31 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const payload = await verifyRequestJwt(req);
+    const isAdmin = payload && requireRole(payload, ['super_admin', 'admin', 'operations']);
+    
     let userId = payload?.sub || null;
-
     if (!userId) {
       userId = await getFallbackUserId();
     }
 
     const body = await req.json();
-    const { phoneNumber, customerReference } = body;
+    const { phoneNumber, customerReference, userId: bodyUserId } = body;
 
     if (!phoneNumber) {
       return NextResponse.json({ message: 'phoneNumber is required' }, { status: 400 });
     }
 
+    // Place order via Telnyx API (falls back to mock internally if not configured)
     const order = await createNumberOrder(phoneNumber, customerReference);
 
-    if (userId) {
+    // Assign to specified user if admin, fallback to current session user
+    const finalUserId = (isAdmin && bodyUserId) ? bodyUserId : userId;
+
+    if (isTelnyxConfigured() && finalUserId) {
       try {
         const supabase = createServerSupabaseClient();
         await supabase.from('phone_orders').insert({
-          user_id: userId,
+          user_id: finalUserId,
           order_id: order.id,
           status: order.status,
           phone_number: phoneNumber,
@@ -95,7 +116,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...order, userId });
+    return NextResponse.json({ ...order, userId: finalUserId });
   } catch (error: any) {
     console.error('[API /telnyx/orders POST Error]', error);
     return NextResponse.json(

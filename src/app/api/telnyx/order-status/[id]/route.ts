@@ -15,6 +15,16 @@ export async function GET(
     if (payload?.sub) {
       try {
         const supabase = createServerSupabaseClient();
+        
+        // Resolve original user_id this order belongs to
+        const { data: dbOrder } = await supabase
+          .from('phone_orders')
+          .select('user_id')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        const targetUserId = dbOrder?.user_id || payload.sub;
+
         await supabase
           .from('phone_orders')
           .update({
@@ -28,7 +38,7 @@ export async function GET(
           for (const num of order.phoneNumbers) {
             await supabase.from('phone_numbers').upsert(
               {
-                user_id: payload.sub,
+                user_id: targetUserId,
                 phone_number: num,
                 country_code: num.startsWith('+44') ? 'GB' : num.startsWith('+49') ? 'DE' : 'US',
                 status: 'active',

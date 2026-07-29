@@ -29,9 +29,47 @@ function getTelnyxClient() {
   });
 }
 
-// Mock Storage for Development Sandbox
-let mockPurchasedNumbers: TelecomNumber[] = [];
-let mockOrders: NumberOrder[] = [];
+let mockPurchasedNumbers: TelecomNumber[] = [
+  {
+    id: 'num-8f12a3b4-5678',
+    phoneNumber: '+14155552671',
+    status: 'active',
+    countryCode: 'US',
+    type: 'local',
+    capabilities: ['voice', 'sms', 'mms'],
+    purchasedAt: '2026-07-10T10:15:30.000Z',
+    agentId: 'agent-9e8d7c6b5a4f',
+  },
+  {
+    id: 'num-3c4d5e6f-7890',
+    phoneNumber: '+18005550199',
+    status: 'active',
+    countryCode: 'US',
+    type: 'toll_free',
+    capabilities: ['voice', 'sms'],
+    purchasedAt: '2026-07-12T14:30:00.000Z',
+  },
+];
+let mockOrders: NumberOrder[] = [
+  {
+    id: 'ord-9e8d7c6b-5a4f',
+    status: 'success',
+    createdAt: '2026-07-10T10:15:00.000Z',
+    phoneNumbers: ['+14155552671'],
+    requirementsMet: true,
+    subOrderIds: [],
+    customerReference: 'REF-US-OFFICE',
+  },
+  {
+    id: 'ord-1a2b3c4d-5e6f',
+    status: 'pending',
+    createdAt: '2026-07-13T18:10:00.000Z',
+    phoneNumbers: ['+442079460192'],
+    requirementsMet: false,
+    subOrderIds: ['sub-442079460192'],
+    customerReference: 'REF-UK-BRANCH',
+  },
+];
 
 let mockComplianceRequirements: Record<string, ComplianceRequirement[]> = {
   'sub-442079460192': [
@@ -145,21 +183,65 @@ export async function searchAvailableNumbers(filters: SearchFilters): Promise<Av
       'page[size]': limit,
       'page[number]': page,
     };
-    if (filters.areaCode) params['filter[area_code]'] = filters.areaCode;
+    if (filters.areaCode) {
+      if (['US', 'CA'].includes(filters.country.toUpperCase())) {
+        params['filter[area_code]'] = filters.areaCode;
+      } else {
+        params['filter[national_destination_code]'] = filters.areaCode;
+      }
+    }
     if (filters.type && filters.type !== 'all') params['filter[number_type]'] = filters.type === 'toll_free' ? 'toll-free' : filters.type;
     if (filters.features && filters.features.length > 0) params['filter[features]'] = filters.features.join(',');
 
     const res = await getTelnyxClient().get('/available_phone_numbers', { params });
     const rawData = res.data?.data || [];
-    return rawData.map((item: any) => ({
-      phoneNumber: item.phone_number,
-      countryCode: item.country_code,
-      state: item.administrative_area || undefined,
-      locality: item.locality || undefined,
-      type: item.number_type === 'toll-free' ? 'toll_free' : item.number_type,
-      capabilities: (item.features || []).filter((f: any) => f.status === 'supported').map((f: any) => f.name),
-      cost: item.cost_information?.monthly_recurring_price ? parseFloat(item.cost_information.monthly_recurring_price) : undefined,
-    }));
+
+    // Log the first item to help debug field names
+    if (rawData.length > 0) {
+      console.log('[Telnyx Search] Sample raw item keys:', Object.keys(rawData[0]));
+      console.log('[Telnyx Search] Sample raw item:', JSON.stringify(rawData[0], null, 2));
+    }
+
+    return rawData.map((item: any) => {
+      // Parse capabilities - features can be an array of objects OR an object with keys
+      const capabilities: string[] = [];
+      if (Array.isArray(item.features)) {
+        item.features.forEach((f: any) => {
+          if (typeof f === 'string') {
+            capabilities.push(f);
+          } else if (f && (f.status === 'supported' || f.status === 'available' || f.status === 'enabled')) {
+            capabilities.push(f.name);
+          }
+        });
+      } else if (item.features && typeof item.features === 'object') {
+        Object.keys(item.features).forEach((key) => {
+          const val = item.features[key];
+          if (val && (val.status === 'supported' || val.status === 'available' || val.status === 'enabled' || val === true)) {
+            capabilities.push(key);
+          }
+        });
+      }
+
+      // Determine number type - check multiple possible field names
+      const rawType = item.number_type || item.phone_number_type || item.type || '';
+      const type = rawType === 'toll-free' ? 'toll_free' : (rawType || 'local');
+
+      // Determine locality from multiple possible fields
+      const locality = item.locality || item.city || item.region || undefined;
+      const state = item.administrative_area || item.state || item.region_information?.[0]?.region_name || undefined;
+
+      return {
+        phoneNumber: item.phone_number,
+        countryCode: item.country_code || filters.country,
+        state,
+        locality,
+        type,
+        capabilities: capabilities.length > 0 ? capabilities : ['voice'],
+        cost: item.cost_information?.monthly_recurring_price
+          ? parseFloat(item.cost_information.monthly_recurring_price)
+          : (item.monthly_cost ? parseFloat(item.monthly_cost) : undefined),
+      };
+    });
   } catch (error: any) {
     throw new Error(`Telnyx Search Error: ${error.response?.data?.errors?.[0]?.detail || error.message}`);
   }
