@@ -74,7 +74,7 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
     <header
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm"
+          ? "bg-white/90 dark:bg-[#050816]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-lg"
           : "bg-transparent"
       }`}
     >
@@ -83,14 +83,14 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
           {/* Logo */}
           <div onClick={() => handleNavClick("home")} className="flex items-center gap-3 cursor-pointer group">
             <Logo />
-            <span className="font-extrabold text-2xl tracking-tight text-slate-900 font-sans">
+            <span className="font-extrabold text-2xl tracking-tight text-slate-900 dark:text-white font-sans">
               CallAutomate
             </span>
           </div>
 
           {/* Nav Links */}
           <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => handleNavClick("features")} className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors cursor-pointer">
+            <button onClick={() => handleNavClick("features")} className="text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-[#00D4FF] text-sm font-semibold transition-colors cursor-pointer">
               Features
             </button>
 
@@ -100,27 +100,27 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
               onMouseEnter={() => setDropdownOpen(true)}
               onMouseLeave={() => setDropdownOpen(false)}
             >
-              <button className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors flex items-center gap-1 cursor-pointer">
+              <button className="text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-[#00D4FF] text-sm font-semibold transition-colors flex items-center gap-1 cursor-pointer">
                 Industries <ChevronDown className="w-3.5 h-3.5 mt-0.5" />
               </button>
 
-              <div className={`absolute top-full left-0 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 transition-all duration-200 origin-top-left ${dropdownOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"}`}>
-                <button onClick={() => handleNavClick("industry-restaurant")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Restaurants & Takeaways</button>
-                <button onClick={() => handleNavClick("industry-salon")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Salons & Spas</button>
-                <button onClick={() => handleNavClick("industry-real-estate")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Real Estate</button>
-                <button onClick={() => handleNavClick("industry-logistics")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Logistics</button>
-                <button onClick={() => handleNavClick("industry-healthcare")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Healthcare</button>
-                <button onClick={() => handleNavClick("industry-retail")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors font-medium cursor-pointer">Retail</button>
+              <div className={`absolute top-full left-0 w-56 bg-white dark:bg-[#0D1B4F] rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 py-2 transition-all duration-200 origin-top-left ${dropdownOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"}`}>
+                <button onClick={() => handleNavClick("industry-restaurant")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Restaurants & Takeaways</button>
+                <button onClick={() => handleNavClick("industry-salon")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Salons & Spas</button>
+                <button onClick={() => handleNavClick("industry-real-estate")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Real Estate</button>
+                <button onClick={() => handleNavClick("industry-logistics")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Logistics</button>
+                <button onClick={() => handleNavClick("industry-healthcare")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Healthcare</button>
+                <button onClick={() => handleNavClick("industry-retail")} className="block w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-[#00D4FF] transition-colors font-medium cursor-pointer">Retail</button>
               </div>
             </div>
 
-            <button onClick={() => handleNavClick("how-it-works")} className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors cursor-pointer">
+            <button onClick={() => handleNavClick("how-it-works")} className="text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-[#00D4FF] text-sm font-semibold transition-colors cursor-pointer">
               How it Works
             </button>
-            <button onClick={() => handleNavClick("pricing")} className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors cursor-pointer">
+            <button onClick={() => handleNavClick("pricing")} className="text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-[#00D4FF] text-sm font-semibold transition-colors cursor-pointer">
               Pricing
             </button>
-            <button onClick={() => handleNavClick("contact")} className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors cursor-pointer">
+            <button onClick={() => handleNavClick("contact")} className="text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-[#00D4FF] text-sm font-semibold transition-colors cursor-pointer">
               Contact Us
             </button>
           </div>
@@ -132,15 +132,15 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
 
             <button
               onClick={() => handleNavClick("booking")}
-              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 cursor-pointer"
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-90 text-white px-6 py-2.5 rounded-full text-xs font-extrabold shadow-lg shadow-indigo-500/25 transition-all cursor-pointer hover:-translate-y-0.5"
             >
-              Book a Demo
+              Book a Demo →
             </button>
 
             {isAuthenticated && user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
               >
                 <LayoutDashboard className="w-4 h-4 text-white" />
                 <span>Dashboard</span>
@@ -148,9 +148,9 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
             ) : (
               <Link
                 href="/auth/login"
-                className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-900 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
+                className="inline-flex items-center gap-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 px-5 py-2.5 rounded-full text-xs font-bold transition-all"
               >
-                <LogIn className="w-4 h-4 text-slate-600" />
+                <LogIn className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                 <span>Sign In</span>
               </Link>
             )}
@@ -161,7 +161,7 @@ export function LandingHeader({ onNavigate, onUpgradeClick }: LandingHeaderProps
             <ThemeToggle />
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 rounded-lg"
+              className="p-2 text-slate-600 dark:text-white rounded-lg"
             >
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
