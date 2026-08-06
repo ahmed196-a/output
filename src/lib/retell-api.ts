@@ -15,6 +15,7 @@ import type {
   RetellVoice,
   CloneVoiceDto,
   SearchVoiceDto,
+  SearchCommunityVoiceDto,
   RetellLlmResponse,
   CreateLlmDto,
   UpdateLlmDto,
@@ -28,6 +29,7 @@ import type {
   StopCallResponse,
   RetellKnowledgeBaseResponse,
   CreateKnowledgeBaseDto,
+  AddKnowledgeBaseSourcesDto,
   UpdateKnowledgeBaseDto,
   RetellTestDefinitionResponse,
   CreateTestDefinitionDto,
@@ -156,11 +158,15 @@ async function retellRequest<T>(
   }
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     Authorization: `Bearer ${getRetellKey()}`,
     ...(extraOpts.idempotencyKey ? { "Idempotency-Key": extraOpts.idempotencyKey } : {}),
     ...(options.headers as Record<string, string>),
   };
+
+  // Only set application/json if body is NOT FormData (FormData manages its own multipart boundary)
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const startTime = Date.now();
   let attempts = 0;
@@ -372,20 +378,67 @@ export async function getRetellAgent(
   extraOpts?: RequestExtraOpts
 ): Promise<RetellAgentResponse> {
   if (!isRetellConfigured()) {
-    const found = MOCK_STORE.agents.get(agentId);
-    if (found) return found;
-    return (
-      Array.from(MOCK_STORE.agents.values())[0] || {
+    let found = MOCK_STORE.agents.get(agentId);
+    if (!found) {
+      for (const a of MOCK_STORE.agents.values()) {
+        if (a.agent_id === agentId || (a as any).id === agentId) {
+          found = a;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      found = {
         agent_id: agentId,
         agent_name: "Voice Agent",
         voice_id: "retell-Cimo",
         language: "en-US",
         response_engine: { type: "retell-llm" },
+      };
+      MOCK_STORE.agents.set(agentId, found);
+    }
+
+    const mockLlmId = (found.response_engine as any)?.llm_id;
+    if (mockLlmId) {
+      const mockLlm = MOCK_STORE.llms.get(mockLlmId);
+      if (mockLlm) {
+        if (found.general_prompt === undefined) found.general_prompt = mockLlm.general_prompt;
+        if (found.begin_message === undefined) found.begin_message = mockLlm.begin_message;
       }
-    );
+    }
+    return found;
   }
 
-  return retellRequest<RetellAgentResponse>(`/get-agent/${agentId}`, {}, extraOpts);
+  const agent = await retellRequest<RetellAgentResponse>(`/get-agent/${agentId}`, {}, extraOpts);
+
+  // If agent uses Retell LLM, automatically fetch LLM object to populate prompt, begin_message, & knowledge_base_ids
+  const llmId = (agent?.response_engine as any)?.llm_id;
+  if (llmId) {
+    try {
+      const llm = await getRetellLlm(llmId, extraOpts);
+      if (llm) {
+        if (agent.general_prompt === undefined || agent.general_prompt === "") {
+          agent.general_prompt = llm.general_prompt;
+        }
+        if (agent.begin_message === undefined || agent.begin_message === "") {
+          agent.begin_message = llm.begin_message;
+        }
+        if (!Array.isArray(agent.knowledge_base_ids) || agent.knowledge_base_ids.length === 0) {
+          if (Array.isArray(llm.knowledge_base_ids)) {
+            agent.knowledge_base_ids = llm.knowledge_base_ids;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[getRetellAgent LLM fetch warn]", e);
+    }
+  }
+
+  if ((agent as any).begin_after_user_silence_ms === undefined && (agent as any).post_response_delay_ms !== undefined) {
+    (agent as any).begin_after_user_silence_ms = (agent as any).post_response_delay_ms;
+  }
+
+  return agent;
 }
 
 export async function updateRetellAgent(
@@ -394,24 +447,60 @@ export async function updateRetellAgent(
   extraOpts?: RequestExtraOpts
 ): Promise<RetellAgentResponse> {
   if (!isRetellConfigured()) {
-    const agent = MOCK_STORE.agents.get(agentId);
-    if (agent) {
-      if (body.agent_name) agent.agent_name = body.agent_name;
-      if (body.voice_id) agent.voice_id = body.voice_id;
-      if (body.begin_message) agent.begin_message = body.begin_message;
-      if (body.general_prompt) agent.general_prompt = body.general_prompt;
-      agent.last_modification_timestamp = Date.now();
-      MOCK_STORE.agents.set(agentId, agent);
-      return agent;
+    let agent = MOCK_STORE.agents.get(agentId);
+    if (!agent) {
+      for (const a of MOCK_STORE.agents.values()) {
+        if (a.agent_id === agentId || (a as any).id === agentId) {
+          agent = a;
+          break;
+        }
+      }
     }
+    if (!agent) {
+      agent = {
+        agent_id: agentId,
+        agent_name: body.agent_name || "Voice Agent",
+        voice_id: body.voice_id || "retell-Cimo",
+        language: body.language || "en-US",
+        response_engine: { type: "retell-llm" },
+        begin_message: body.begin_message,
+        general_prompt: body.general_prompt,
+        created_at: Date.now(),
+        version: 1,
+      };
+    }
+    if (body.agent_name !== undefined) agent.agent_name = body.agent_name;
+    if (body.voice_id !== undefined) agent.voice_id = body.voice_id;
+    if (body.begin_message !== undefined) agent.begin_message = body.begin_message;
+    if (body.general_prompt !== undefined) agent.general_prompt = body.general_prompt;
+    if (body.language !== undefined) agent.language = body.language;
+    if ((body as any).begin_after_user_silence_ms !== undefined) {
+      (agent as any).begin_after_user_silence_ms = (body as any).begin_after_user_silence_ms;
+    }
+    agent.last_modification_timestamp = Date.now();
+    MOCK_STORE.agents.set(agentId, agent);
+    if (agent.agent_id) MOCK_STORE.agents.set(agent.agent_id, agent);
+    return agent;
   }
 
-  const res = await retellRequest<RetellAgentResponse>(
-    `/update-agent/${agentId}`,
-    { method: "PATCH", body: JSON.stringify(body) },
-    extraOpts
-  );
+  let res: RetellAgentResponse;
+  try {
+    res = await retellRequest<RetellAgentResponse>(
+      `/v2/update-agent/${agentId}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      extraOpts
+    );
+  } catch {
+    res = await retellRequest<RetellAgentResponse>(
+      `/update-agent/${agentId}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      extraOpts
+    );
+  }
   invalidateCachePrefix("GET:/list-agents");
+  invalidateCachePrefix("GET:/v2/list-agents");
+  invalidateCacheKey(`GET:/get-agent/${agentId}`);
+  invalidateCacheKey(`GET:/v2/get-agent/${agentId}`);
   return res;
 }
 
@@ -487,14 +576,22 @@ export async function publishRetellAgent(
 
 // ─── Voice Management Wrappers ────────────────────────────────────────────────
 
+import { RETELL_VOICE_CATALOG } from "./retell-voices-catalog";
+
 export async function listRetellVoices(extraOpts?: RequestExtraOpts): Promise<RetellVoice[]> {
   if (!isRetellConfigured()) {
-    return Array.from(MOCK_STORE.voices.values());
+    return RETELL_VOICE_CATALOG;
   }
   try {
-    return await retellRequest<RetellVoice[]>("/list-voices", {}, extraOpts);
+    const fetched = await retellRequest<RetellVoice[]>("/list-voices", {}, extraOpts);
+    const map = new Map<string, RetellVoice>();
+    RETELL_VOICE_CATALOG.forEach((v) => map.set(v.voice_id, v));
+    (Array.isArray(fetched) ? fetched : []).forEach((v) => {
+      map.set(v.voice_id, { ...map.get(v.voice_id), ...v });
+    });
+    return Array.from(map.values());
   } catch {
-    return Array.from(MOCK_STORE.voices.values());
+    return RETELL_VOICE_CATALOG;
   }
 }
 
@@ -523,6 +620,23 @@ export async function cloneRetellVoice(
   return res;
 }
 
+export async function getRetellVoice(
+  voiceId: string,
+  extraOpts?: RequestExtraOpts
+): Promise<RetellVoice> {
+  if (!isRetellConfigured()) {
+    const found = MOCK_STORE.voices.get(voiceId);
+    if (found) return found;
+    return {
+      voice_id: voiceId,
+      voice_name: voiceId,
+      provider: "elevenlabs",
+      gender: "female",
+    };
+  }
+  return retellRequest<RetellVoice>(`/get-voice/${encodeURIComponent(voiceId)}`, {}, extraOpts);
+}
+
 export async function searchRetellVoices(
   query: SearchVoiceDto,
   extraOpts?: RequestExtraOpts
@@ -532,6 +646,22 @@ export async function searchRetellVoices(
   return voices.filter((v) => v.voice_name.toLowerCase().includes(q) || v.provider.toLowerCase().includes(q));
 }
 
+export async function searchCommunityVoice(
+  payload: SearchCommunityVoiceDto,
+  extraOpts?: RequestExtraOpts
+): Promise<RetellVoice[]> {
+  if (!isRetellConfigured()) {
+    const all = Array.from(MOCK_STORE.voices.values());
+    const q = (payload.query || payload.voice_name || "").toLowerCase();
+    return all.filter((v) => v.voice_name.toLowerCase().includes(q) || v.provider.toLowerCase().includes(q));
+  }
+  return retellRequest<RetellVoice[]>(
+    "/search-community-voice",
+    { method: "POST", body: JSON.stringify(payload) },
+    extraOpts
+  );
+}
+
 // ─── Retell LLM CRUD Wrappers ─────────────────────────────────────────────────
 
 export async function listRetellLlms(extraOpts?: RequestExtraOpts): Promise<RetellLlmResponse[]> {
@@ -539,7 +669,19 @@ export async function listRetellLlms(extraOpts?: RequestExtraOpts): Promise<Rete
     return Array.from(MOCK_STORE.llms.values());
   }
   try {
-    return await retellRequest<RetellLlmResponse[]>("/list-retell-llms", {}, extraOpts);
+    let res: any;
+    try {
+      res = await retellRequest<any>("/v2/list-retell-llms", {}, extraOpts);
+    } catch {
+      res = await retellRequest<any>("/list-retell-llms", {}, extraOpts);
+    }
+
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === "object") {
+      const list = res.items || res.llms || res.data || [];
+      if (Array.isArray(list)) return list;
+    }
+    return [];
   } catch {
     return Array.from(MOCK_STORE.llms.values());
   }
@@ -552,31 +694,99 @@ export async function getRetellLlm(
   if (!isRetellConfigured()) {
     return MOCK_STORE.llms.get(llmId) || Array.from(MOCK_STORE.llms.values())[0];
   }
-  return retellRequest<RetellLlmResponse>(`/get-retell-llm/${llmId}`, {}, extraOpts);
+  const encodedId = encodeURIComponent(llmId);
+  try {
+    return await retellRequest<RetellLlmResponse>(`/get-retell-llm/${encodedId}`, {}, extraOpts);
+  } catch {
+    return await retellRequest<RetellLlmResponse>(`/v2/get-retell-llm/${encodedId}`, {}, extraOpts);
+  }
+}
+
+export const ALLOWED_RETELL_LLM_MODELS = new Set([
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4.1-nano",
+  "gpt-5",
+  "gpt-5-mini",
+  "gpt-5-nano",
+  "gpt-5.1",
+  "gpt-5.2",
+  "gpt-5.4",
+  "gpt-5.4-mini",
+  "gpt-5.4-nano",
+  "gpt-5.5",
+  "gpt-5.6-terra",
+  "gpt-5.6-luna",
+  "claude-4.0-sonnet",
+  "claude-4.5-sonnet",
+  "claude-4.6-sonnet",
+  "claude-5-sonnet",
+  "claude-4.5-haiku",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-3.0-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.6-flash",
+]);
+
+export function sanitizeRetellModel(rawModel?: string): string {
+  if (!rawModel) return "gpt-4o";
+  const trimmed = rawModel.trim();
+  if (ALLOWED_RETELL_LLM_MODELS.has(trimmed)) return trimmed;
+
+  if (trimmed.includes("claude-3.5")) return "claude-4.0-sonnet";
+  if (trimmed.includes("claude-3")) return "claude-4.0-sonnet";
+  if (trimmed.includes("claude-4")) return "claude-4.5-sonnet";
+  if (trimmed.includes("gemini-1.5")) return "gemini-2.0-flash";
+  if (trimmed.includes("gemini")) return "gemini-2.0-flash";
+  if (trimmed.includes("gpt-3")) return "gpt-4o-mini";
+  if (trimmed.includes("gpt-4-turbo")) return "gpt-4o";
+
+  return "gpt-4o";
 }
 
 export async function createRetellLlm(
   opts: CreateLlmDto,
   extraOpts?: RequestExtraOpts
 ): Promise<RetellLlmResponse> {
+  const sanitizedOpts = {
+    ...opts,
+    ...(opts.model ? { model: sanitizeRetellModel(opts.model) } : {}),
+  };
+
   if (!isRetellConfigured()) {
     const llmId = `llm_${Math.random().toString(36).substring(2, 10)}`;
     const mockLlm: RetellLlmResponse = {
       llm_id: llmId,
-      model: opts.model || "gpt-4o",
-      general_prompt: opts.general_prompt || "You are a helpful AI assistant.",
-      begin_message: opts.begin_message || "Hello! How can I help you today?",
-      knowledge_base_ids: opts.knowledge_base_ids || [],
+      model: sanitizedOpts.model || "gpt-4o",
+      general_prompt: sanitizedOpts.general_prompt || "You are a helpful AI assistant.",
+      begin_message: sanitizedOpts.begin_message || "Hello! How can I help you today?",
+      knowledge_base_ids: sanitizedOpts.knowledge_base_ids || [],
     };
     MOCK_STORE.llms.set(llmId, mockLlm);
     return mockLlm;
   }
 
-  const res = await retellRequest<RetellLlmResponse>(
-    "/create-retell-llm",
-    { method: "POST", body: JSON.stringify(opts) },
-    extraOpts
-  );
+  let res: RetellLlmResponse;
+  try {
+    res = await retellRequest<RetellLlmResponse>(
+      "/create-retell-llm",
+      { method: "POST", body: JSON.stringify(sanitizedOpts) },
+      extraOpts
+    );
+  } catch {
+    res = await retellRequest<RetellLlmResponse>(
+      "/v2/create-retell-llm",
+      { method: "POST", body: JSON.stringify(sanitizedOpts) },
+      extraOpts
+    );
+  }
   invalidateCachePrefix("GET:/list-retell-llms");
   return res;
 }
@@ -586,24 +796,41 @@ export async function updateRetellLlm(
   opts: UpdateLlmDto,
   extraOpts?: RequestExtraOpts
 ): Promise<RetellLlmResponse> {
+  const sanitizedOpts = {
+    ...opts,
+    ...(opts.model ? { model: sanitizeRetellModel(opts.model) } : {}),
+  };
+
   if (!isRetellConfigured()) {
     const llm = MOCK_STORE.llms.get(llmId);
     if (llm) {
-      if (opts.general_prompt) llm.general_prompt = opts.general_prompt;
-      if (opts.begin_message) llm.begin_message = opts.begin_message;
-      if (opts.model) llm.model = opts.model;
-      if (opts.knowledge_base_ids) llm.knowledge_base_ids = opts.knowledge_base_ids;
+      if (sanitizedOpts.general_prompt) llm.general_prompt = sanitizedOpts.general_prompt;
+      if (sanitizedOpts.begin_message) llm.begin_message = sanitizedOpts.begin_message;
+      if (sanitizedOpts.model) llm.model = sanitizedOpts.model;
+      if (sanitizedOpts.knowledge_base_ids) llm.knowledge_base_ids = sanitizedOpts.knowledge_base_ids;
       MOCK_STORE.llms.set(llmId, llm);
       return llm;
     }
   }
 
-  const res = await retellRequest<RetellLlmResponse>(
-    `/update-retell-llm/${llmId}`,
-    { method: "PATCH", body: JSON.stringify(opts) },
-    extraOpts
-  );
+  const encodedId = encodeURIComponent(llmId);
+  let res: RetellLlmResponse;
+  try {
+    res = await retellRequest<RetellLlmResponse>(
+      `/update-retell-llm/${encodedId}`,
+      { method: "PATCH", body: JSON.stringify(sanitizedOpts) },
+      extraOpts
+    );
+  } catch {
+    res = await retellRequest<RetellLlmResponse>(
+      `/v2/update-retell-llm/${encodedId}`,
+      { method: "PATCH", body: JSON.stringify(sanitizedOpts) },
+      extraOpts
+    );
+  }
   invalidateCachePrefix("GET:/list-retell-llms");
+  invalidateCacheKey(`GET:/get-retell-llm/${llmId}`);
+  invalidateCacheKey(`GET:/v2/get-retell-llm/${llmId}`);
   return res;
 }
 
@@ -662,7 +889,7 @@ export async function updateRetellPhoneNumber(
   }
 
   if (!isRetellConfigured()) {
-    const num = MOCK_STORE.phoneNumbers.get(phoneNumber) || { phone_number: phoneNumber };
+    const num = MOCK_STORE.phoneNumbers.get(phoneNumber) || { phone_number: phoneNumber, phone_number_pretty: phoneNumber };
     if (payload.nickname) num.nickname = payload.nickname;
     if (payload.inbound_agents) num.inbound_agents = payload.inbound_agents;
     if (payload.outbound_agents) num.outbound_agents = payload.outbound_agents;
@@ -670,12 +897,23 @@ export async function updateRetellPhoneNumber(
     return num;
   }
 
-  const res = await retellRequest<RetellPhoneNumberResponse>(
-    `/update-phone-number/${encodeURIComponent(phoneNumber)}`,
-    { method: "PATCH", body: JSON.stringify(payload) },
-    extraOpts
-  );
+  const encodedNum = encodeURIComponent(phoneNumber);
+  let res: RetellPhoneNumberResponse;
+  try {
+    res = await retellRequest<RetellPhoneNumberResponse>(
+      `/v2/update-phone-number/${encodedNum}`,
+      { method: "PATCH", body: JSON.stringify(payload) },
+      extraOpts
+    );
+  } catch {
+    res = await retellRequest<RetellPhoneNumberResponse>(
+      `/update-phone-number/${encodedNum}`,
+      { method: "PATCH", body: JSON.stringify(payload) },
+      extraOpts
+    );
+  }
   invalidateCachePrefix("GET:/list-phone-numbers");
+  invalidateCachePrefix("GET:/v2/list-phone-numbers");
   return res;
 }
 
@@ -684,13 +922,14 @@ export async function getRetellPhoneNumber(
   extraOpts?: RequestExtraOpts
 ): Promise<RetellPhoneNumberResponse> {
   if (!isRetellConfigured()) {
-    return MOCK_STORE.phoneNumbers.get(phoneNumber) || { phone_number: phoneNumber };
+    return MOCK_STORE.phoneNumbers.get(phoneNumber) || { phone_number: phoneNumber, phone_number_pretty: phoneNumber };
   }
-  return retellRequest<RetellPhoneNumberResponse>(
-    `/get-phone-number/${encodeURIComponent(phoneNumber)}`,
-    {},
-    extraOpts
-  );
+  const encodedNum = encodeURIComponent(phoneNumber);
+  try {
+    return await retellRequest<RetellPhoneNumberResponse>(`/v2/get-phone-number/${encodedNum}`, {}, extraOpts);
+  } catch {
+    return await retellRequest<RetellPhoneNumberResponse>(`/get-phone-number/${encodedNum}`, {}, extraOpts);
+  }
 }
 
 export async function listRetellPhoneNumbers(
@@ -699,7 +938,26 @@ export async function listRetellPhoneNumbers(
   if (!isRetellConfigured()) {
     return Array.from(MOCK_STORE.phoneNumbers.values());
   }
-  return retellPaginate<RetellPhoneNumberResponse>("/list-phone-numbers", {}, extraOpts);
+  try {
+    let res: any;
+    try {
+      res = await retellRequest<any>("/v2/list-phone-numbers", {}, extraOpts);
+    } catch {
+      res = await retellRequest<any>("/list-phone-numbers", {}, extraOpts);
+    }
+
+    if (Array.isArray(res)) {
+      return res;
+    }
+    if (res && typeof res === "object") {
+      const list = res.phone_numbers || res.numbers || res.data || res.items || [];
+      if (Array.isArray(list)) return list;
+    }
+    return [];
+  } catch (err) {
+    console.error("[listRetellPhoneNumbers Error]", err);
+    return Array.from(MOCK_STORE.phoneNumbers.values());
+  }
 }
 
 export async function deleteRetellPhoneNumber(
@@ -722,14 +980,13 @@ export async function associatePhoneNumberWithAgent(
   phoneNumber: string,
   agentId: string,
   extraOpts?: RequestExtraOpts
-): Promise<any> {
-  if (!isRetellConfigured()) {
-    return { success: true, phone_number: phoneNumber, agent_id: agentId, mock: true };
-  }
-
-  return retellRequest<any>(
-    "/import-phone-number",
-    { method: "POST", body: JSON.stringify({ phone_number: phoneNumber, agent_id: agentId }) },
+): Promise<RetellPhoneNumberResponse> {
+  return updateRetellPhoneNumber(
+    phoneNumber,
+    {
+      inbound_agents: [{ agent_id: agentId }],
+      outbound_agents: [{ agent_id: agentId }],
+    },
     extraOpts
   );
 }
@@ -795,6 +1052,7 @@ export async function createBatchPhoneCall(
 
 export async function createRetellWebCall(
   agentId: string,
+  agentOverride?: Record<string, unknown>,
   extraOpts?: RequestExtraOpts
 ): Promise<{ access_token: string; call_id: string }> {
   if (!isRetellConfigured()) {
@@ -804,9 +1062,14 @@ export async function createRetellWebCall(
     };
   }
 
+  const payload: Record<string, unknown> = { agent_id: agentId };
+  if (agentOverride) {
+    payload.agent_override = agentOverride;
+  }
+
   return retellRequest<{ access_token: string; call_id: string }>(
     "/v2/create-web-call",
-    { method: "POST", body: JSON.stringify({ agent_id: agentId }) },
+    { method: "POST", body: JSON.stringify(payload) },
     extraOpts
   );
 }
@@ -895,11 +1158,15 @@ export async function createKnowledgeBase(
     throw new RetellApiError("Knowledge Base feature disabled.", 503, createFeatureUnavailableResponse("Knowledge Base"));
   }
 
+  // Retell spec requires knowledge_base_name <= 40 characters
+  const rawName = (payload.knowledge_base_name || "Knowledge Base").trim();
+  const kbName = rawName.length > 39 ? rawName.slice(0, 39) : rawName;
+
   if (!isRetellConfigured()) {
     const kbId = `kb_${Math.random().toString(36).substring(2, 10)}`;
     const created: RetellKnowledgeBaseResponse = {
       knowledge_base_id: kbId,
-      knowledge_base_name: payload.knowledge_base_name,
+      knowledge_base_name: kbName,
       status: "complete",
       created_at: Date.now(),
     };
@@ -907,10 +1174,125 @@ export async function createKnowledgeBase(
     return created;
   }
 
+  // Extract & sanitize URLs
+  const rawUrls = payload.knowledge_base_urls || payload.urls || [];
+  const formattedUrls = rawUrls
+    .map((u) => {
+      const trimmed = (u || "").trim();
+      if (!trimmed) return "";
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+      return `https://${trimmed}`;
+    })
+    .filter(Boolean);
+
+  // Extract & sanitize Texts
+  const rawTexts = payload.knowledge_base_texts || payload.texts || [];
+  const formattedTexts = rawTexts
+    .map((t) => ({
+      title: (t.title || "Knowledge Snippet").trim(),
+      text: (t.text || "").trim(),
+    }))
+    .filter((t) => t.text.length > 0);
+
+  // Build multipart/form-data per Retell OpenAPI specification
+  const formData = new FormData();
+  formData.append("knowledge_base_name", kbName);
+
+  if (formattedTexts.length > 0) {
+    formData.append("knowledge_base_texts", JSON.stringify(formattedTexts));
+  }
+
+  if (formattedUrls.length > 0) {
+    formData.append("knowledge_base_urls", JSON.stringify(formattedUrls));
+  }
+
+  // Handle uploaded files
+  const rawFiles = payload.knowledge_base_files || payload.files || [];
+  if (rawFiles && rawFiles.length > 0) {
+    rawFiles.forEach((fileItem: any) => {
+      if (typeof Blob !== "undefined" && fileItem instanceof Blob) {
+        formData.append("knowledge_base_files", fileItem);
+      } else if (fileItem?.data && fileItem?.name) {
+        const base64Content = fileItem.data.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64Content, "base64");
+        const blob = new Blob([buffer], { type: fileItem.content_type || "application/octet-stream" });
+        formData.append("knowledge_base_files", blob, fileItem.name);
+      }
+    });
+  }
+
   const res = await retellRequest<RetellKnowledgeBaseResponse>(
     "/create-knowledge-base",
-    { method: "POST", body: JSON.stringify(payload) },
-    { ...extraOpts, timeoutMs: 120000 } // 120s timeout
+    { method: "POST", body: formData },
+    { ...extraOpts, timeoutMs: 120000 }
+  );
+  invalidateCachePrefix("GET:/list-knowledge-bases");
+  return res;
+}
+
+export async function addKnowledgeBaseSources(
+  kbId: string,
+  payload: AddKnowledgeBaseSourcesDto,
+  extraOpts?: RequestExtraOpts
+): Promise<RetellKnowledgeBaseResponse> {
+  if (!isFeatureEnabled("KNOWLEDGE_BASE")) {
+    throw new RetellApiError("Knowledge Base feature disabled.", 503, createFeatureUnavailableResponse("Knowledge Base"));
+  }
+
+  if (!isRetellConfigured()) {
+    const kb = MOCK_STORE.knowledgeBases.get(kbId) || {
+      knowledge_base_id: kbId,
+      knowledge_base_name: "KB",
+      status: "complete" as const,
+    };
+    MOCK_STORE.knowledgeBases.set(kbId, kb);
+    return kb;
+  }
+
+  const rawUrls = payload.knowledge_base_urls || payload.urls || [];
+  const formattedUrls = rawUrls
+    .map((u) => {
+      const trimmed = (u || "").trim();
+      if (!trimmed) return "";
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+      return `https://${trimmed}`;
+    })
+    .filter(Boolean);
+
+  const rawTexts = payload.knowledge_base_texts || payload.texts || [];
+  const formattedTexts = rawTexts
+    .map((t) => ({
+      title: (t.title || "Knowledge Snippet").trim(),
+      text: (t.text || "").trim(),
+    }))
+    .filter((t) => t.text.length > 0);
+
+  const formData = new FormData();
+  if (formattedTexts.length > 0) {
+    formData.append("knowledge_base_texts", JSON.stringify(formattedTexts));
+  }
+  if (formattedUrls.length > 0) {
+    formData.append("knowledge_base_urls", JSON.stringify(formattedUrls));
+  }
+
+  const rawFiles = payload.knowledge_base_files || payload.files || [];
+  if (rawFiles && rawFiles.length > 0) {
+    rawFiles.forEach((fileItem: any) => {
+      if (typeof Blob !== "undefined" && fileItem instanceof Blob) {
+        formData.append("knowledge_base_files", fileItem);
+      } else if (fileItem?.data && fileItem?.name) {
+        const base64Content = fileItem.data.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64Content, "base64");
+        const blob = new Blob([buffer], { type: fileItem.content_type || "application/octet-stream" });
+        formData.append("knowledge_base_files", blob, fileItem.name);
+      }
+    });
+  }
+
+  const res = await retellRequest<RetellKnowledgeBaseResponse>(
+    `/add-knowledge-base-sources/${encodeURIComponent(kbId)}`,
+    { method: "POST", body: formData },
+    { ...extraOpts, timeoutMs: 120000 }
   );
   invalidateCachePrefix("GET:/list-knowledge-bases");
   return res;
@@ -959,7 +1341,23 @@ export async function listKnowledgeBases(
   if (!isRetellConfigured()) {
     return Array.from(MOCK_STORE.knowledgeBases.values());
   }
-  return retellPaginate<RetellKnowledgeBaseResponse>("/list-knowledge-bases", {}, extraOpts);
+  try {
+    let res: any;
+    try {
+      res = await retellRequest<any>("/v2/list-knowledge-bases", {}, extraOpts);
+    } catch {
+      res = await retellRequest<any>("/list-knowledge-bases", {}, extraOpts);
+    }
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === "object") {
+      const list = res.knowledge_bases || res.knowledgeBases || res.data || res.items || [];
+      if (Array.isArray(list)) return list;
+    }
+    return [];
+  } catch (err) {
+    console.error("[listKnowledgeBases Error]", err);
+    return Array.from(MOCK_STORE.knowledgeBases.values());
+  }
 }
 
 export async function getKnowledgeBase(

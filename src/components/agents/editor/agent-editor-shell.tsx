@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Bot, Sparkles, Mic, Database, Cpu, Variable, PhoneCall, Play, Activity, Tag, Check, Loader2, Save, Trash2, Globe
+  ArrowLeft, Bot, Sparkles, Mic, Database, Cpu, PhoneCall, Play, Activity, Tag, Check, Loader2, Save, Trash2, Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,15 +33,18 @@ export function AgentEditorShell({ agent: initialAgent }: AgentEditorShellProps)
       });
 
       if (res.ok) {
-        const responseData = await res.json();
-        setAgent((prev: any) => ({
-          ...prev,
-          config: {
-            ...prev.config,
-            [section]: payload,
-          },
-        }));
         setSectionStatus((prev) => ({ ...prev, [section]: "saved" }));
+
+        // Instantly re-fetch fresh agent data from GET API
+        try {
+          const freshRes = await fetch(`/api/agents/${agent.agent_id || agent.id}`, { cache: "no-store" });
+          if (freshRes.ok) {
+            const freshAgent = await freshRes.json();
+            setAgent(freshAgent);
+          }
+        } catch (e) {
+          console.warn("[Auto-refresh agent warn]", e);
+        }
       } else {
         setSectionStatus((prev) => ({ ...prev, [section]: "error" }));
       }
@@ -54,8 +57,8 @@ export function AgentEditorShell({ agent: initialAgent }: AgentEditorShellProps)
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Bot, desc: "General, Prompting & Voice Engine" },
-    { id: "intelligence", label: "Intelligence", icon: Database, desc: "Knowledge RAG, LLM & Variables" },
-    { id: "communication", label: "Communication", icon: PhoneCall, desc: "Phone DIDs & Telephony Routing" },
+    { id: "intelligence", label: "Intelligence", icon: Database, desc: "Knowledge RAG & LLM Models" },
+    { id: "communication", label: "Phone Numbers", icon: PhoneCall, desc: "Phone DIDs & Telephony Routing" },
     { id: "testing", label: "Testing Studio", icon: Play, desc: "WebRTC Voice & Chat Simulator" },
     { id: "analytics", label: "Analytics", icon: Activity, desc: "Telemetry & Performance Metrics" },
     { id: "publishing", label: "Publishing", icon: Tag, desc: "Versions & Production Deployment" },

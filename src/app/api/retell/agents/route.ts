@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     const userAgents = await Promise.all(
       Array.from(userDbRecordsMap.values()).map(async (dbRecord: any) => {
         try {
-          const live = await getRetellAgent(dbRecord.retell_agent_id);
+          const live = await getRetellAgent(dbRecord.retell_agent_id, { skipCache: true });
           return {
             id: dbRecord.id,
             agent_id: dbRecord.retell_agent_id,

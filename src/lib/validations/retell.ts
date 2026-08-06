@@ -116,7 +116,34 @@ export const createKbSchema = z.object({
       })
     )
     .optional(),
-  urls: z.array(z.string().url()).optional(),
+  urls: z.array(z.string()).optional(),
+  files: z
+    .array(
+      z.object({
+        name: z.string(),
+        content_type: z.string().optional(),
+        data: z.string().optional(),
+      })
+    )
+    .optional(),
+  knowledge_base_texts: z
+    .array(
+      z.object({
+        title: z.string(),
+        text: z.string(),
+      })
+    )
+    .optional(),
+  knowledge_base_urls: z.array(z.string()).optional(),
+  knowledge_base_files: z
+    .array(
+      z.object({
+        name: z.string(),
+        content_type: z.string().optional(),
+        data: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateKbSchema = createKbSchema.partial();

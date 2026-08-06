@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { updateRetellAgent } from "@/lib/retell-api";
+import { updateRetellAgent, getRetellAgent } from "@/lib/retell-api";
 
 export async function PATCH(
   req: NextRequest,
@@ -9,67 +8,31 @@ export async function PATCH(
   try {
     const { agentId } = await context.params;
     const body = await req.json();
-    const { name, provider, description, language, timezone, fallback_language } = body;
+    const { name, language } = body;
 
-    const supabase = createServerSupabaseClient();
+    // Call Retell AI REST API directly (Retell as Single Source of Truth)
+    const retellResult = await updateRetellAgent(agentId, {
+      agent_name: name,
+      language: language || "en-US",
+    });
 
-    // 1. Update local database
-    const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    };
-    if (name) updateData.name = name;
-    if (language) updateData.language = language;
-
-    // Fetch existing agent to get retell_agent_id
-    const { data: dbAgent } = await supabase
-      .from("agents")
-      .select("*")
-      .or(`id.eq.${agentId},retell_agent_id.eq.${agentId}`)
-      .single();
-
-    if (dbAgent) {
-      const config = dbAgent.config || {};
-      config.general = {
-        ...config.general,
-        name: name || dbAgent.name,
-        provider: provider || config.general?.provider || "retell",
-        description,
-        language: language || dbAgent.language,
-        timezone,
-        fallback_language,
-      };
-
-      await supabase
-        .from("agents")
-        .update({
-          ...updateData,
-          config,
-        })
-        .eq("id", dbAgent.id);
-
-      // 2. Sync to Retell API if applicable
-      if (dbAgent.retell_agent_id && (name || language)) {
-        try {
-          await updateRetellAgent(dbAgent.retell_agent_id, {
-            agent_name: name,
-            language,
-          });
-        } catch (err) {
-          console.warn("[General Section Sync Warn]", err);
-        }
-      }
-    }
+    const freshAgent = await getRetellAgent(agentId, { skipCache: true });
 
     return NextResponse.json({
       success: true,
       section: "general",
-      data: { name, provider, description, language, timezone, fallback_language },
+      data: {
+        ...retellResult,
+        ...freshAgent,
+        name: freshAgent.agent_name || name || retellResult.agent_name,
+        agent_name: freshAgent.agent_name || name || retellResult.agent_name,
+      },
     });
   } catch (error: any) {
     console.error("[PATCH /api/agents/[agentId]/general]", error);
     return NextResponse.json(
-      { error: error.message || "Failed to update general settings" },
-      { status: 500 }
+      { error: error.message || "Failed to update general settings on Retell AI" },
+      { status: error.status || 500 }
     );
   }
 }

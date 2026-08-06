@@ -57,6 +57,7 @@ export type RetellAgentResponse = {
   response_engine: { type: string; llm_id?: string; llm_websocket_url?: string };
   begin_message?: string;
   general_prompt?: string;
+  begin_after_user_silence_ms?: number;
   created_at?: number;
   last_modification_timestamp?: number;
   version?: number;
@@ -71,6 +72,7 @@ export type CreateAgentDto = {
   language?: string;
   begin_message?: string;
   general_prompt?: string;
+  begin_after_user_silence_ms?: number;
   ambient_sound?: string;
   responsiveness?: number;
   interruption_sensitivity?: number;
@@ -91,12 +93,15 @@ export type PublishAgentResponse = {
 
 export type PhoneAgentAssignmentDto = {
   agent_id: string;
+  weight?: number;
 };
 
 export type RetellPhoneNumberResponse = {
   phone_number: string;
   phone_number_pretty?: string;
   nickname?: string;
+  inbound_agent_id?: string;
+  outbound_agent_id?: string;
   inbound_agents?: PhoneAgentAssignmentDto[];
   outbound_agents?: PhoneAgentAssignmentDto[];
   area_code?: number;
@@ -211,7 +216,10 @@ export type RetellVoice = {
   provider: string;
   accent?: string;
   gender?: string;
+  age?: string;
+  avatar_url?: string;
   preview_audio_url?: string;
+  trait?: string;
 };
 
 export type RetellVoiceResponse = RetellVoice;
@@ -228,6 +236,14 @@ export type SearchVoiceDto = {
   accent?: string;
 };
 
+export type SearchCommunityVoiceDto = {
+  query?: string;
+  voice_name?: string;
+  gender?: "male" | "female";
+  accent?: string;
+  provider?: string;
+};
+
 // ─── Retell LLM Types & DTOs ──────────────────────────────────────────────────
 
 export type RetellLlmResponse = {
@@ -235,16 +251,25 @@ export type RetellLlmResponse = {
   general_prompt?: string;
   begin_message?: string;
   model?: string;
+  model_temperature?: number;
+  begin_after_user_silence_ms?: number;
   knowledge_base_ids?: string[];
+  default_dynamic_variables?: Record<string, string>;
+  kb_config?: { top_k?: number; filter_score?: number };
   states?: Array<{ name: string; state_prompt?: string; edges?: unknown[] }>;
+  last_modification_timestamp?: number;
   [key: string]: unknown;
 };
 
 export type CreateLlmDto = {
   model?: string;
+  model_temperature?: number;
   general_prompt?: string;
   begin_message?: string;
+  begin_after_user_silence_ms?: number;
   knowledge_base_ids?: string[];
+  default_dynamic_variables?: Record<string, string>;
+  kb_config?: { top_k?: number; filter_score?: number };
   states?: Array<{ name: string; state_prompt?: string; edges?: unknown[] }>;
 };
 
@@ -264,12 +289,26 @@ export type CreateKnowledgeBaseDto = {
   knowledge_base_name: string;
   texts?: Array<{ title: string; text: string }>;
   urls?: string[];
+  files?: Array<{ name: string; content_type?: string; data?: string }>;
+  knowledge_base_texts?: Array<{ title: string; text: string }>;
+  knowledge_base_urls?: string[];
+  knowledge_base_files?: Array<{ name: string; content_type?: string; data?: string }>;
+};
+
+export type AddKnowledgeBaseSourcesDto = {
+  texts?: Array<{ title: string; text: string }>;
+  urls?: string[];
+  files?: Array<{ name: string; content_type?: string; data?: string }>;
+  knowledge_base_texts?: Array<{ title: string; text: string }>;
+  knowledge_base_urls?: string[];
+  knowledge_base_files?: Array<{ name: string; content_type?: string; data?: string }>;
 };
 
 export type UpdateKnowledgeBaseDto = {
   knowledge_base_name?: string;
   texts?: Array<{ title: string; text: string }>;
   urls?: string[];
+  files?: Array<{ name: string; content_type?: string; data?: string }>;
 };
 
 export type AttachKbDto = {

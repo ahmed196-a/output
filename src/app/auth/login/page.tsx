@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@/hooks/use-login";
 import { useAuthStore } from "@/store/auth-store";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { GoogleSignInButton } from "@/components/shared/GoogleSignInButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -118,10 +119,21 @@ function LoginForm() {
           Sign in
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--muted-text)" }}>
-          Use your workspace credentials to access your dashboard.
+          Use your workspace credentials or Google account to sign in.
         </p>
 
-        <div className="mt-6 space-y-4" onKeyDown={handleKeyDown}>
+        <div className="mt-6 space-y-4">
+          <GoogleSignInButton label="Sign in with Google" onError={(err) => setErrorMessage(err)} />
+
+          <div className="relative flex items-center justify-center my-4">
+            <div className="w-full border-t border-[var(--border)]" />
+            <span className="absolute px-3 text-xs uppercase bg-[var(--surface)] text-[var(--subtle-text)] tracking-wider">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-4" onKeyDown={handleKeyDown}>
           <div className="space-y-1.5">
             <label className="text-sm font-medium" style={{ color: "var(--muted-text)" }}>
               Email
@@ -227,27 +239,12 @@ function LoginForm() {
         </div>
 
         <div className="mt-6 flex flex-col gap-2 pt-4" style={{ borderTop: "1px solid var(--border-light)" }}>
-          <button
-            type="button"
-            onClick={() => {
-              clearSession();
-              setEmail("");
-              setPassword("");
-              setErrorMessage(null);
-            }}
-            className="block w-full text-center text-sm transition-colors"
-            style={{ color: "var(--subtle-text)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--muted-text)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--subtle-text)")}
-          >
-            Clear local session
-          </button>
           <Link
-            href="/pricing"
+            href="/"
             className="block text-center text-sm transition-colors"
             style={{ color: "var(--subtle-text)" }}
           >
-            ← Back to pricing
+            ← Back to CallAutomate
           </Link>
         </div>
       </section>

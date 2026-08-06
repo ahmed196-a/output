@@ -70,7 +70,7 @@ export function AgentsShell() {
           calls_today: Math.floor(Math.random() * 150) + 12,
           success_rate: Math.floor(Math.random() * 15) + 85,
           knowledge_base_ids: a.config?.knowledge_base_ids || [],
-          phone_number: a.phoneNumber || a.phone_number || "+1 (555) 333-4444",
+          phone_number: a.phoneNumber || a.phone_number || null,
         }));
         setAgents(mapped);
       } else {

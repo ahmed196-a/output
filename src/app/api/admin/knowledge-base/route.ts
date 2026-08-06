@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listKnowledgeBases, createKnowledgeBase } from "@/lib/retell-api";
 import { createKbSchema } from "@/lib/validations/retell";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
   try {
@@ -25,6 +26,23 @@ export async function POST(request: Request) {
 
     const correlationId = request.headers.get("x-correlation-id") || undefined;
     const result = await createKnowledgeBase(validation.data, { correlationId });
+
+    // Sync snapshot to local Supabase DB
+    try {
+      const supabase = createServerSupabaseClient();
+      await supabase
+        .from("retell_knowledge_bases")
+        .upsert({
+          knowledge_base_id: result.knowledge_base_id,
+          knowledge_base_name: result.knowledge_base_name,
+          status: result.status || "indexing",
+          documents: result.documents || [],
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "knowledge_base_id" });
+    } catch (dbErr) {
+      console.warn("[Knowledge Base DB Snapshot Warning]", dbErr);
+    }
+
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
