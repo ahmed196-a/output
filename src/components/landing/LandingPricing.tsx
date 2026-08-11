@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Check, Zap, ArrowRight, Phone, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { motion } from "framer-motion";
 
 interface Plan {
   id: string;
@@ -66,7 +67,13 @@ export function LandingPricing() {
   return (
     <section id="pricing" className="py-24 bg-slate-900 text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-4">
             <Zap className="w-3.5 h-3.5" />
             <span>Simple Transparent Pricing</span>
@@ -77,7 +84,7 @@ export function LandingPricing() {
           <p className="text-slate-400 text-lg">
             Includes 30-Day Free Trial. Upgrade, downgrade, or cancel anytime.
           </p>
-        </div>
+        </motion.div>
 
         {fetchError && (
           <div className="max-w-md mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm font-semibold">
@@ -93,22 +100,41 @@ export function LandingPricing() {
 
         {!loadingPlans && plans.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            {plans.map((plan) => {
+            {plans.map((plan, idx) => {
               const featured = plan.is_featured;
 
               return (
-                <div
+                <motion.div
                   key={plan.id}
+                  initial={{ opacity: 0, y: 60, scale: 0.92 }}
+                  whileInView={{ opacity: 1, y: 0, scale: featured ? 1.03 : 1 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{
+                    duration: 0.6,
+                    delay: idx * 0.12,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  whileHover={{
+                    y: -8,
+                    scale: featured ? 1.06 : 1.03,
+                    transition: { duration: 0.25 },
+                  }}
                   className={`relative rounded-3xl p-8 transition-all duration-300 flex flex-col justify-between ${
                     featured
-                      ? "bg-slate-800 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/20 scale-[1.03]"
+                      ? "bg-slate-800 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/20"
                       : "bg-slate-950/80 border border-slate-800 hover:border-slate-700"
                   }`}
                 >
                   {featured && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[11px] font-extrabold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.4, delay: 0.5 }}
+                      className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[11px] font-extrabold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg"
+                    >
                       Most Popular
-                    </div>
+                    </motion.div>
                   )}
 
                   <div>
@@ -123,10 +149,16 @@ export function LandingPricing() {
                       {plan.description || "Automate your customer phone calls with voice AI."}
                     </p>
 
-                    <div className="flex items-baseline gap-1 mb-6">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: idx * 0.12 + 0.3, type: "spring", stiffness: 150 }}
+                      className="flex items-baseline gap-1 mb-6"
+                    >
                       <span className="text-5xl font-black text-white tracking-tight">${plan.monthly_price}</span>
                       <span className="text-slate-400 text-sm font-medium">/month</span>
-                    </div>
+                    </motion.div>
 
                     <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 mb-6 flex items-center gap-3">
                       <Phone className="w-5 h-5 text-indigo-400 shrink-0" />
@@ -142,17 +174,26 @@ export function LandingPricing() {
 
                     {plan.features.length > 0 && (
                       <ul className="space-y-3 mb-8">
-                        {plan.features.map((feat, idx) => (
-                          <li key={idx} className="flex items-center gap-2.5 text-xs text-slate-300">
+                        {plan.features.map((feat, fidx) => (
+                          <motion.li
+                            key={fidx}
+                            initial={{ opacity: 0, x: -15 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.3, delay: idx * 0.1 + fidx * 0.06 + 0.4 }}
+                            className="flex items-center gap-2.5 text-xs text-slate-300"
+                          >
                             <Check className="w-4 h-4 text-indigo-400 shrink-0" />
                             <span>{feat}</span>
-                          </li>
+                          </motion.li>
                         ))}
                       </ul>
                     )}
                   </div>
 
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => handleCheckout(plan)}
                     disabled={loadingPlanId === plan.id}
                     className={`w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -169,8 +210,8 @@ export function LandingPricing() {
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-                  </button>
-                </div>
+                  </motion.button>
+                </motion.div>
               );
             })}
           </div>

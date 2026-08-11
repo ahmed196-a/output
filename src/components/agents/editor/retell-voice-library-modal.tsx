@@ -275,7 +275,7 @@ export function RetellVoiceLibraryModal({
               <Mic className="h-4 w-4 text-[var(--brand-500)]" />
             </div>
             <div>
-              <h2 className="font-bold text-sm text-white">Retell Voice Library</h2>
+              <h2 className="font-bold text-sm text-white">CallAutomate Voice Library</h2>
               <p className="text-[11px] text-slate-400">
                 {loading ? "Loading voices…" : `${filtered.length} voices available`}
               </p>
@@ -330,7 +330,7 @@ export function RetellVoiceLibraryModal({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <div className="h-8 w-8 rounded-full border-2 border-[var(--brand-500)] border-t-transparent animate-spin" />
-              <p className="text-xs text-slate-400 font-medium">Fetching voices from Retell…</p>
+              <p className="text-xs text-slate-400 font-medium">Fetching available agent voices…</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
@@ -387,9 +387,6 @@ export function RetellVoiceLibraryModal({
                           {voice.trait ||
                             `${voice.accent || "American"} · ${voice.age || "Middle Aged"} · ${voice.gender || "—"}`}
                         </p>
-                        <p className="text-[9px] font-mono text-slate-600 truncate mt-0.5">
-                          {voice.voice_id}
-                        </p>
                       </div>
 
                       <button
@@ -426,7 +423,7 @@ export function RetellVoiceLibraryModal({
         {/* Footer */}
         <div className="px-6 py-3 border-t border-[#2a2d36] bg-[#16171b] flex items-center justify-between shrink-0">
           <p className="text-[10px] text-slate-500">
-            Voices powered by <span className="text-slate-300 font-semibold">Retell AI</span>
+            Voices powered by <span className="text-slate-300 font-semibold">CallAutomate</span>
           </p>
           <button
             onClick={() => { stopAllAudio(); onClose(); }}

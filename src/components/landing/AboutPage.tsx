@@ -12,7 +12,7 @@ export function AboutPage() {
           <span>Our Story</span>
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
-          Building the Voice OS for Modern Business
+          Building the AI Voice Platform for Modern Business
         </h1>
         <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto mb-16">
           CallAutomate was founded to solve a simple yet massive problem: businesses losing millions of dollars and thousands of hours due to missed calls and overcrowded phone lines.

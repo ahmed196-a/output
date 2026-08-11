@@ -8,6 +8,7 @@ import { useLogin } from "@/hooks/use-login";
 import { useAuthStore } from "@/store/auth-store";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { GoogleSignInButton } from "@/components/shared/GoogleSignInButton";
+import { CallAutomateLogoIcon } from "@/components/shared/call-automate-logo";
 
 function LoginForm() {
   const router = useRouter();
@@ -71,15 +72,16 @@ function LoginForm() {
         }}
       >
         {/* Brand header */}
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-center flex items-center justify-center gap-3">
+          <CallAutomateLogoIcon className="w-9 h-9 shrink-0" size={36} />
           <span
-            className="text-xl font-bold tracking-wider uppercase"
+            className="text-2xl font-extrabold tracking-tight"
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
               color: "var(--foreground)",
             }}
           >
-            Voice<span className="text-[var(--brand-500)]" style={{ textShadow: "var(--brand-glow-text)" }}>OS</span>
+            Call<span className="text-[var(--brand-500)]">Automate</span>
           </span>
         </div>
 

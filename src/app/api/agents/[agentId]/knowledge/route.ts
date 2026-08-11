@@ -1,6 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { getRetellAgent, updateRetellAgent, updateRetellLlm, listKnowledgeBases } from "@/lib/retell-api";
+import { getRetellAgent, updateRetellAgent, updateRetellLlm, getKnowledgeBase } from "@/lib/retell-api";
+import { verifyRequestJwt } from "@/lib/jwt-auth";
+
+async function getFallbackUserId(): Promise<string | null> {
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: users } = await supabase.from("users").select("id").limit(1);
+    if (users && users.length > 0) return users[0].id;
+  } catch (e) {}
+  return null;
+}
+
+async function getUserKnowledgeBases(req: NextRequest): Promise<any[]> {
+  try {
+    const payload = await verifyRequestJwt(req);
+    let userId = payload?.sub || null;
+    if (!userId) userId = await getFallbackUserId();
+
+    if (!userId) return [];
+
+    const supabase = createServerSupabaseClient();
+    const { data: userKbs } = await supabase.from("retell_knowledge_bases").select("*");
+
+    const userKbRecords = (userKbs || []).filter(
+      (kb: any) => kb.created_by === userId || kb.raw_payload?.created_by === userId
+    );
+
+    if (userKbRecords.length === 0) return [];
+
+    return await Promise.all(
+      userKbRecords.map(async (record: any) => {
+        try {
+          const live = await getKnowledgeBase(record.knowledge_base_id, { skipCache: true });
+          return {
+            ...record,
+            ...live,
+            knowledge_base_id: record.knowledge_base_id,
+            knowledge_base_name: live?.knowledge_base_name || record.knowledge_base_name,
+            status: live?.status || record.status || "complete",
+          };
+        } catch {
+          return {
+            knowledge_base_id: record.knowledge_base_id,
+            knowledge_base_name: record.knowledge_base_name,
+            status: record.status || "complete",
+          };
+        }
+      })
+    );
+  } catch {
+    return [];
+  }
+}
 
 export async function GET(
   req: NextRequest,
@@ -16,7 +68,6 @@ export async function GET(
         retellKbIds = liveAgent.knowledge_base_ids;
       }
     } catch {
-      // Fall back to Supabase snapshot if needed
       const supabase = createServerSupabaseClient();
       const { data: dbAgent } = await supabase
         .from("agents")
@@ -26,7 +77,7 @@ export async function GET(
       retellKbIds = dbAgent?.config?.knowledge_base_ids || [];
     }
 
-    const allKbs = await listKnowledgeBases({ skipCache: true });
+    const allKbs = await getUserKnowledgeBases(req);
 
     return NextResponse.json({
       knowledge_base_ids: retellKbIds,
@@ -35,7 +86,7 @@ export async function GET(
   } catch (error: any) {
     console.error("[GET /api/agents/[agentId]/knowledge]", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch Knowledge Base configuration from Retell AI" },
+      { error: error.message || "Failed to fetch Knowledge Base configuration" },
       { status: 500 }
     );
   }
@@ -132,7 +183,7 @@ export async function PATCH(
         .eq("id", dbAgent.id);
     }
 
-    const freshKbs = await listKnowledgeBases({ skipCache: true });
+    const freshKbs = await getUserKnowledgeBases(req);
 
     return NextResponse.json({
       success: true,

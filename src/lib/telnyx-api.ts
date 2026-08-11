@@ -29,27 +29,7 @@ function getTelnyxClient() {
   });
 }
 
-let mockPurchasedNumbers: TelecomNumber[] = [
-  {
-    id: 'num-8f12a3b4-5678',
-    phoneNumber: '+14155552671',
-    status: 'active',
-    countryCode: 'US',
-    type: 'local',
-    capabilities: ['voice', 'sms', 'mms'],
-    purchasedAt: '2026-07-10T10:15:30.000Z',
-    agentId: 'agent-9e8d7c6b5a4f',
-  },
-  {
-    id: 'num-3c4d5e6f-7890',
-    phoneNumber: '+18005550199',
-    status: 'active',
-    countryCode: 'US',
-    type: 'toll_free',
-    capabilities: ['voice', 'sms'],
-    purchasedAt: '2026-07-12T14:30:00.000Z',
-  },
-];
+let mockPurchasedNumbers: TelecomNumber[] = [];
 let mockOrders: NumberOrder[] = [
   {
     id: 'ord-9e8d7c6b-5a4f',
@@ -135,7 +115,7 @@ const MOCK_AVAILABLE_NUMBERS: AvailableNumber[] = [
   { phoneNumber: '+61291234567', countryCode: 'AU', locality: 'Sydney', type: 'local', capabilities: ['voice', 'sms'], cost: 2.80 },
 ];
 
-export function updateMockNumberAgent(phoneNumber: string, agentId: string) {
+export function updateMockNumberAgent(phoneNumber: string, agentId?: string) {
   const num = mockPurchasedNumbers.find((n) => n.phoneNumber === phoneNumber);
   if (num) {
     num.agentId = agentId;
@@ -230,6 +210,21 @@ export async function searchAvailableNumbers(filters: SearchFilters): Promise<Av
       const locality = item.locality || item.city || item.region || undefined;
       const state = item.administrative_area || item.state || item.region_information?.[0]?.region_name || undefined;
 
+      let telnyxPrice = 1.00;
+      if (item.cost_information?.monthly_recurring_cost !== undefined) {
+        telnyxPrice = parseFloat(item.cost_information.monthly_recurring_cost);
+      } else if (item.cost_information?.monthly_recurring_price !== undefined) {
+        telnyxPrice = parseFloat(item.cost_information.monthly_recurring_price);
+      } else if (item.monthly_cost !== undefined) {
+        telnyxPrice = parseFloat(item.monthly_cost);
+      } else if (item.cost !== undefined) {
+        telnyxPrice = parseFloat(item.cost);
+      }
+
+      if (isNaN(telnyxPrice) || telnyxPrice <= 0) {
+        telnyxPrice = 1.00;
+      }
+
       return {
         phoneNumber: item.phone_number,
         countryCode: item.country_code || filters.country,
@@ -237,9 +232,7 @@ export async function searchAvailableNumbers(filters: SearchFilters): Promise<Av
         locality,
         type,
         capabilities: capabilities.length > 0 ? capabilities : ['voice'],
-        cost: item.cost_information?.monthly_recurring_price
-          ? parseFloat(item.cost_information.monthly_recurring_price)
-          : (item.monthly_cost ? parseFloat(item.monthly_cost) : undefined),
+        cost: telnyxPrice + 1.5,
       };
     });
   } catch (error: any) {

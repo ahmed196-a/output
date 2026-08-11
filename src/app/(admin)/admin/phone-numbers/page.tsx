@@ -122,7 +122,18 @@ export default function AdminPhoneNumbersPage() {
 
       if (numRes.ok) {
         const numData = await numRes.json();
-        setNumbers(Array.isArray(numData) ? numData : []);
+        const mapped = (Array.isArray(numData) ? numData : []).map((n: any) => ({
+          id: n.id || n.phone_number || Math.random().toString(),
+          phoneNumber: n.phone_number_pretty || n.phone_number || n.phoneNumber || "Unknown Line",
+          countryCode: n.country_code || n.countryCode || (n.phone_number?.startsWith("+44") ? "GB" : "US"),
+          type: n.type || "Local",
+          status: n.status || "Active",
+          agentId: n.inbound_agent_id || n.outbound_agent_id || n.agent_id || n.agentId || "",
+          userId: n.user_id || n.userId || "",
+          userEmail: n.user_email || n.userEmail || n.nickname || "Admin Line",
+          userName: n.user_name || n.userName || n.nickname || "CallAutomate Line",
+        }));
+        setNumbers(mapped);
       }
 
       if (userRes.ok) {
@@ -393,12 +404,17 @@ export default function AdminPhoneNumbersPage() {
     }
   };
 
-  const filteredNumbers = numbers.filter(
-    (n) =>
-      n.phoneNumber.includes(search) ||
-      n.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-      n.userName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredNumbers = numbers.filter((n) => {
+    const phone = n.phoneNumber || "";
+    const email = n.userEmail || "";
+    const name = n.userName || "";
+    const q = (search || "").toLowerCase();
+    return (
+      phone.includes(search) ||
+      email.toLowerCase().includes(q) ||
+      name.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -509,7 +525,7 @@ export default function AdminPhoneNumbersPage() {
                   <th>Country</th>
                   <th>Type</th>
                   <th>Owner User</th>
-                  <th>Assigned Retell Agent</th>
+                  <th>Assigned CallAutomate Agent</th>
                   <th>Status</th>
                   <th>Admin Action</th>
                 </tr>
@@ -528,15 +544,15 @@ export default function AdminPhoneNumbersPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredNumbers.map((num) => (
-                    <tr key={num.id}>
-                      <td className="font-bold text-[var(--foreground)]">{num.phoneNumber}</td>
-                      <td>{num.countryCode}</td>
-                      <td className="capitalize">{num.type}</td>
+                  filteredNumbers.map((num, idx) => (
+                    <tr key={num.id || num.phoneNumber || `num-${idx}`}>
+                      <td className="font-extrabold text-[var(--foreground)] font-mono">{num.phoneNumber}</td>
+                      <td className="text-[var(--foreground)] font-semibold">{num.countryCode}</td>
+                      <td className="capitalize text-[var(--foreground)] font-medium">{num.type}</td>
                       <td>
                         <div>
-                          <div className="font-semibold text-xs text-[var(--foreground)]">{num.userName}</div>
-                          <div className="text-[11px] text-[var(--subtle-text)]">{num.userEmail}</div>
+                          <div className="font-bold text-xs text-[var(--foreground)]">{num.userName}</div>
+                          <div className="text-[11px] text-[var(--muted-text)] font-mono">{num.userEmail}</div>
                         </div>
                       </td>
                       <td>
@@ -546,16 +562,16 @@ export default function AdminPhoneNumbersPage() {
                           className="form-select py-1 text-xs"
                         >
                           <option value="">-- Select Voice Agent --</option>
-                          {agents.map((a) => (
-                            <option key={a.id} value={a.retell_agent_id}>
-                              {a.name} ({a.retell_agent_id})
+                          {agents.map((a, aIdx) => (
+                            <option key={a.id || a.retell_agent_id || `agent-${aIdx}`} value={a.retell_agent_id}>
+                              {a.name}
                             </option>
                           ))}
                         </select>
                       </td>
                       <td>
-                        <span className="px-2.5 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          {num.status}
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          {num.status || "Active"}
                         </span>
                       </td>
                       <td>
@@ -883,7 +899,7 @@ export default function AdminPhoneNumbersPage() {
             </div>
 
             <div>
-              <label className="form-label">Assign to Retell Voice Agent (Optional)</label>
+              <label className="form-label">Assign to CallAutomate Voice Agent (Optional)</label>
               <select
                 value={selectedAgentForPurchase}
                 onChange={(e) => setSelectedAgentForPurchase(e.target.value)}

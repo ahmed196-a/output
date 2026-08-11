@@ -143,7 +143,7 @@ export function OverviewGroup({ agent, onSaveSection, savingSection }: GroupProp
         <div className="space-y-4 text-xs">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="font-bold text-[var(--foreground)]">Custom First Message (begin_message)</label>
+              <label className="font-bold text-[var(--foreground)]">Custom First Message</label>
             </div>
             <p className="text-[11px] text-[var(--subtle-text)] mb-1.5">
               First utterance by the agent. Leave empty (<code className="px-1 py-0.5 bg-[var(--surface-2)] rounded font-mono">""</code>) to make the agent wait for the user to speak first.
@@ -158,7 +158,7 @@ export function OverviewGroup({ agent, onSaveSection, savingSection }: GroupProp
           </div>
 
           <div>
-            <label className="block font-bold text-[var(--foreground)] mb-1">System Prompt / Instructions (general_prompt)</label>
+            <label className="block font-bold text-[var(--foreground)] mb-1">System Prompt / Instructions</label>
             <textarea
               rows={8}
               value={conversation.general_prompt}
@@ -169,9 +169,9 @@ export function OverviewGroup({ agent, onSaveSection, savingSection }: GroupProp
           </div>
 
           <div className="pt-1">
-            <label className="block font-bold text-[var(--foreground)] mb-1">Pause Before Speaking (begin_after_user_silence_ms)</label>
+            <label className="block font-bold text-[var(--foreground)] mb-1">Pause Before Speaking</label>
             <p className="text-[11px] text-[var(--subtle-text)] mb-1.5">
-              Milliseconds the AI waits (after user silence) before speaking. Only applies when agent is set to wait for user first (i.e. <code className="px-1 py-0.5 bg-[var(--surface-2)] rounded font-mono">begin_message: ""</code>).
+              Milliseconds the AI waits (after user silence) before speaking. Only applies when agent is set to wait for user to speak first.
             </p>
             <div className="max-w-xs flex items-center gap-2">
               <input
@@ -216,7 +216,6 @@ export function OverviewGroup({ agent, onSaveSection, savingSection }: GroupProp
               </div>
               <div className="min-w-0">
                 <p className="font-bold text-[var(--foreground)] truncate">{selectedVoiceName.replace(/^retell-/, "")}</p>
-                <p className="text-[10px] font-mono text-[var(--subtle-text)] truncate">{voice.voice_id}</p>
               </div>
             </div>
             <button
@@ -452,10 +451,10 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
           <div>
             <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
               <Database className="h-4 w-4 text-[var(--brand-500)]" />
-              Knowledge Base RAG Memory (Retell AI)
+              Knowledge Base RAG Memory (CallAutomate)
             </h3>
             <p className="text-[11px] text-[var(--muted-text)] mt-0.5">
-              Knowledge bases attached to this agent via PATCH /v2/update-agent/{agentId}
+              Knowledge bases attached to this voice agent for AI response context
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -487,7 +486,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
         {loading ? (
           <div className="flex items-center justify-center py-8 gap-2 text-xs text-[var(--muted-text)]">
             <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-500)]" />
-            <span>Fetching Knowledge Bases from Retell AI…</span>
+            <span>Fetching Knowledge Bases…</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -500,7 +499,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                 <div className="p-4 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] text-center space-y-1">
                   <p className="font-bold text-xs text-[var(--foreground)]">No Knowledge Bases attached</p>
                   <p className="text-[11px] text-[var(--muted-text)]">
-                    Attach an existing Knowledge Base from your Retell AI account below or create a new one.
+                    Attach an existing Knowledge Base from your account below or create a new one.
                   </p>
                 </div>
               ) : (
@@ -519,7 +518,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                           <div>
                             <p className="font-bold text-[var(--foreground)]">{kb.knowledge_base_name}</p>
                             <p className="text-[10px] font-mono text-[var(--subtle-text)] mt-0.5">
-                              ID: {kb.knowledge_base_id} · Status: <span className="text-emerald-400 font-semibold">{kb.status || "complete"}</span>
+                              Status: <span className="text-emerald-400 font-semibold">{kb.status || "complete"}</span>
                             </p>
                           </div>
                         </div>
@@ -539,14 +538,14 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
               )}
             </div>
 
-            {/* Retell Account Available KBs */}
+            {/* User Created KBs */}
             <div className="space-y-2 pt-2 border-t border-[var(--border)]">
               <label className="block font-bold text-xs text-[var(--foreground)]">
-                All Retell AI Knowledge Bases ({allKbs.length})
+                My Created Knowledge Bases ({allKbs.length})
               </label>
               {allKbs.length === 0 ? (
                 <p className="text-[11px] text-[var(--muted-text)] italic">
-                  No Knowledge Bases found in your Retell AI account. Click "+ New Knowledge Base" above to create one.
+                  No Knowledge Bases uploaded yet. Click &quot;+ New Knowledge Base&quot; above to create one.
                 </p>
               ) : (
                 <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--surface-2)]">
@@ -554,7 +553,6 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                     <thead className="bg-[var(--surface)] border-b border-[var(--border)] text-[var(--muted-text)] font-semibold text-[11px]">
                       <tr>
                         <th className="py-2.5 px-4">KB Name</th>
-                        <th className="py-2.5 px-4">KB ID</th>
                         <th className="py-2.5 px-4">Status</th>
                         <th className="py-2.5 px-4 text-right">Action</th>
                       </tr>
@@ -568,9 +566,6 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                           <tr key={kb.knowledge_base_id} className="hover:bg-[var(--surface)]/50 transition">
                             <td className="py-3 px-4 font-bold text-[var(--foreground)]">
                               {kb.knowledge_base_name}
-                            </td>
-                            <td className="py-3 px-4 font-mono text-[11px] text-[var(--subtle-text)]">
-                              {kb.knowledge_base_id}
                             </td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
@@ -617,7 +612,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2d36] bg-[#18191e]">
               <div className="flex items-center gap-2.5">
                 <Database className="h-4 w-4 text-[var(--brand-500)]" />
-                <h3 className="font-bold text-sm text-white">Create Retell Knowledge Base</h3>
+                <h3 className="font-bold text-sm text-white">Create Knowledge Base</h3>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -721,7 +716,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                     className="w-full bg-[#1e2028] border border-[#2e3140] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[var(--brand-500)]"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Retell AI will crawl and index content from this web URL into RAG vector memory (e.g. <code className="text-white">https://docs.example.com</code>).
+                    CallAutomate will crawl and index content from this web URL into RAG vector memory (e.g. <code className="text-white">https://docs.example.com</code>).
                   </p>
                 </div>
               )}
@@ -780,7 +775,7 @@ export function IntelligenceGroup({ agent, onSaveSection, savingSection }: Group
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--brand-500)] text-[var(--brand-btn-text)] font-bold transition disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {(creating || readingFile) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  <span>{creating ? "Creating on Retell…" : "Create & Attach KB"}</span>
+                  <span>{creating ? "Creating Knowledge Base…" : "Create & Attach KB"}</span>
                 </button>
               </div>
             </form>
@@ -890,7 +885,7 @@ export function CommunicationGroup({ agent }: GroupProps) {
       }
     } catch (e: any) {
       console.error("[Fetch phone numbers error]", e);
-      setErrorMsg("Failed to load phone numbers from Retell AI.");
+      setErrorMsg("Failed to load phone numbers.");
     } finally {
       setLoading(false);
     }
@@ -921,10 +916,10 @@ export function CommunicationGroup({ agent }: GroupProps) {
           await fetchPhoneNumbers();
         }
       } else {
-        setErrorMsg(data.error || "Failed to update phone number attachment on Retell AI.");
+        setErrorMsg(data.error || "Failed to update phone number attachment.");
       }
     } catch (e: any) {
-      setErrorMsg(e.message || "Failed to communicate with Retell AI API.");
+      setErrorMsg(e.message || "Failed to communicate with voice server.");
     } finally {
       setUpdatingNum(null);
     }
@@ -950,20 +945,29 @@ export function CommunicationGroup({ agent }: GroupProps) {
           <div>
             <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
               <PhoneCall className="h-4 w-4 text-[var(--brand-500)]" />
-              Attached Phone Lines (Retell AI)
+              Attached Phone Lines
             </h3>
             <p className="text-[11px] text-[var(--muted-text)] mt-0.5">
-              Live phone numbers configured on Retell AI to route inbound and outbound calls to this agent.
+              CallAutomate phone numbers in your account configured to route inbound and outbound calls to this agent.
             </p>
           </div>
-          <button
-            onClick={fetchPhoneNumbers}
-            disabled={loading}
-            className="p-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted-text)] hover:text-[var(--foreground)] transition cursor-pointer"
-            title="Refresh numbers"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/phone-numbers?tab=search"
+              className="px-3.5 py-1.5 rounded-xl bg-[var(--brand-500)] text-[var(--brand-btn-text)] font-bold text-xs hover:opacity-90 transition flex items-center gap-1.5 shadow-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Buy a Number</span>
+            </a>
+            <button
+              onClick={fetchPhoneNumbers}
+              disabled={loading}
+              className="p-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted-text)] hover:text-[var(--foreground)] transition cursor-pointer"
+              title="Refresh numbers"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            </button>
+          </div>
         </div>
 
         {errorMsg && (
@@ -976,15 +980,22 @@ export function CommunicationGroup({ agent }: GroupProps) {
         {loading ? (
           <div className="flex items-center justify-center py-8 gap-2 text-xs text-[var(--muted-text)]">
             <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-500)]" />
-            <span>Fetching numbers from Retell AI…</span>
+            <span>Fetching your phone numbers…</span>
           </div>
         ) : attachedToThisAgent.length === 0 ? (
-          <div className="p-6 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] text-center space-y-2">
+          <div className="p-6 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] text-center space-y-3">
             <PhoneCall className="h-8 w-8 text-[var(--muted-text)] mx-auto opacity-50" />
             <p className="font-bold text-xs text-[var(--foreground)]">No phone numbers attached yet</p>
             <p className="text-[11px] text-[var(--muted-text)] max-w-sm mx-auto">
-              Select an unassigned phone number from your Retell AI account below to attach it to this agent for inbound and outbound calls.
+              Attach an available number from your account below, or buy a new number to get started.
             </p>
+            <a
+              href="/phone-numbers?tab=search"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--brand-500)] text-[var(--brand-btn-text)] font-bold text-xs hover:opacity-90 transition shadow-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Buy a Number</span>
+            </a>
           </div>
         ) : (
           <div className="space-y-3 text-xs">
@@ -1010,9 +1021,6 @@ export function CommunicationGroup({ agent }: GroupProps) {
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-[var(--muted-text)] font-mono mt-0.5">
-                        Inbound & Outbound Agent: <span className="text-emerald-400 font-bold">{agentId}</span>
-                      </p>
                     </div>
                   </div>
 
@@ -1033,21 +1041,37 @@ export function CommunicationGroup({ agent }: GroupProps) {
 
       {/* Available Unassigned Numbers Section */}
       <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
-        <div className="border-b border-[var(--border)] pb-3">
-          <h3 className="text-sm font-bold text-[var(--foreground)]">
-            Available Unassigned Phone Numbers
-          </h3>
-          <p className="text-[11px] text-[var(--muted-text)] mt-0.5">
-            Free phone numbers in your Retell AI account not assigned to any agent. Click Attach to route to this agent.
-          </p>
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-[var(--foreground)]">
+              Your Purchased Phone Lines
+            </h3>
+            <p className="text-[11px] text-[var(--muted-text)] mt-0.5">
+              Active numbers in your account ready to be assigned to this agent.
+            </p>
+          </div>
+          <a
+            href="/phone-numbers?tab=search"
+            className="px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground)] font-bold text-xs transition flex items-center gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5 text-[var(--brand-500)]" />
+            <span>Buy More Numbers</span>
+          </a>
         </div>
 
         {freeNumbers.length === 0 ? (
-          <div className="p-6 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-center space-y-2">
+          <div className="p-6 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-center space-y-3">
             <p className="text-xs font-bold text-[var(--foreground)]">No unassigned phone numbers available</p>
             <p className="text-[11px] text-[var(--muted-text)] max-w-sm mx-auto">
-              All numbers in your Retell AI account are currently assigned to agents, or no numbers exist yet.
+              All numbers in your account are currently assigned to agents, or you haven&apos;t bought any numbers yet.
             </p>
+            <a
+              href="/phone-numbers?tab=search"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--brand-500)] text-[var(--brand-btn-text)] font-bold text-xs hover:opacity-90 transition shadow-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Buy a Number Now</span>
+            </a>
           </div>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--surface-2)]">
@@ -1071,7 +1095,7 @@ export function CommunicationGroup({ agent }: GroupProps) {
                         {displayNum}
                       </td>
                       <td className="py-3.5 px-4 text-[var(--muted-text)] font-medium">
-                        {num.nickname || (num.area_code ? `Area Code ${num.area_code}` : "Retell Line")}
+                        {num.nickname || (num.area_code ? `Area Code ${num.area_code}` : "CallAutomate Line")}
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--surface)] text-slate-300 font-medium text-[10px] border border-[var(--border)]">
@@ -1106,6 +1130,8 @@ export function TestingGroup({ agent }: GroupProps) {
     { role: "agent", text: agent.begin_message || "Hello! Thank you for calling. How can I help you today?" }
   ]);
   const [chatInput, setChatInput] = useState("");
+  const [retellChatId, setRetellChatId] = useState<string | null>(null);
+  const [creatingChatSession, setCreatingChatSession] = useState(false);
 
   // WebRTC Call States
   const [callState, setCallState] = useState<"idle" | "connecting" | "active" | "ended">("idle");
@@ -1127,18 +1153,108 @@ export function TestingGroup({ agent }: GroupProps) {
     };
   }, []);
 
-  const handleSendChat = (e: React.FormEvent) => {
+  const [sendingChat, setSendingChat] = useState(false);
+
+  const initRetellChatSession = React.useCallback(async () => {
+    setCreatingChatSession(true);
+    try {
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create_chat", agent }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.chat_id) {
+          setRetellChatId(data.chat_id);
+          setChatLog([
+            { role: "agent", text: agent.begin_message || "Hello! Thank you for calling. How can I help you today?" }
+          ]);
+        }
+      }
+    } catch (e) {
+      console.warn("[Init Retell Chat Session Warning]", e);
+    } finally {
+      setCreatingChatSession(false);
+    }
+  }, [agent]);
+
+  useEffect(() => {
+    if (testMode === "chat" && !retellChatId) {
+      initRetellChatSession();
+    }
+  }, [testMode, retellChatId, initRetellChatSession]);
+
+  const handleEndRetellChat = async () => {
+    if (retellChatId) {
+      try {
+        await fetch(`/api/agents/${agent.agent_id || agent.id}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "end_chat", chat_id: retellChatId }),
+        });
+        } catch (e) {
+        console.warn("[End Retell Chat Warning]", e);
+      }
+    }
+    setRetellChatId(null);
+    initRetellChatSession();
+  };
+
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || sendingChat) return;
     const userMsg = chatInput.trim();
-    setChatLog((prev) => [...prev, { role: "user", text: userMsg }]);
     setChatInput("");
-    setTimeout(() => {
-      setChatLog((prev) => [
-        ...prev,
-        { role: "agent", text: `AI Response to: "${userMsg}" using model ${agent.response_engine?.model || "GPT-4o"}.` }
-      ]);
-    }, 800);
+
+    const newChatLog = [...chatLog, { role: "user" as const, text: userMsg }];
+    setChatLog(newChatLog);
+    setSendingChat(true);
+
+    try {
+      let activeChatId = retellChatId;
+      if (!activeChatId) {
+        try {
+          const createRes = await fetch(`/api/agents/${agent.agent_id || agent.id}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "create_chat", agent }),
+          });
+          if (createRes.ok) {
+            const createData = await createRes.json();
+            activeChatId = createData.chat_id || null;
+            if (activeChatId) setRetellChatId(activeChatId);
+          }
+        } catch (e) {
+          console.warn("[Auto-create chat session warn]", e);
+        }
+      }
+
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_chat_completion",
+          chat_id: activeChatId,
+          content: userMsg,
+          messages: newChatLog.map((m) => ({ role: m.role, content: m.text })),
+          agent,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const aiReply = data?.content || data?.response || `I understand your request. How else can I assist you today?`;
+        setChatLog((prev) => [...prev, { role: "agent", text: aiReply }]);
+      } else {
+        throw new Error("Chat request failed");
+      }
+    } catch {
+      let fallbackReply = `I received your message regarding "${userMsg}". How else may I assist you with ${agent.agent_name || agent.name || "CallAutomate Agent"}?`;
+      setChatLog((prev) => [...prev, { role: "agent", text: fallbackReply }]);
+    } finally {
+      setSendingChat(false);
+    }
   };
 
   const recognitionRef = React.useRef<any>(null);
@@ -1278,7 +1394,7 @@ export function TestingGroup({ agent }: GroupProps) {
         };
       }
 
-      // 3. Request Retell Web Call access token from Next.js backend API
+      // 3. Request Web Call access token from Next.js backend API
       const res = await fetch("/api/retell/web-call", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1291,7 +1407,7 @@ export function TestingGroup({ agent }: GroupProps) {
 
       const data = await res.json();
       if (!res.ok || !data.access_token) {
-        throw new Error(data.message || data.error || "Failed to create Web Call session on Retell AI.");
+        throw new Error(data.message || data.error || "Failed to create Web Call session.");
       }
 
       // If mock token is returned (e.g. key missing/mock mode), launch browser voice session directly
@@ -1338,7 +1454,7 @@ export function TestingGroup({ agent }: GroupProps) {
       });
 
       client.on("error", (err: any) => {
-        console.warn("[Retell WebRTC Client Signal Notice]", err);
+        console.warn("[WebRTC Client Signal Notice]", err);
         startFallbackVoiceSession();
       });
 
@@ -1400,8 +1516,8 @@ export function TestingGroup({ agent }: GroupProps) {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
-        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+      <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-6">
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
           <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
             <Play className="h-4 w-4 text-emerald-400" />
             Integrated Live Testing Studio
@@ -1414,7 +1530,7 @@ export function TestingGroup({ agent }: GroupProps) {
                 testMode === "voice" ? "bg-[var(--brand-500)] text-[var(--brand-btn-text)]" : "bg-[var(--surface-2)] text-[var(--muted-text)]"
               )}
             >
-              🎙️ Live Retell WebRTC Audio
+              🎙️ Live WebRTC Voice Studio
             </button>
             <button
               onClick={() => setTestMode("chat")}
@@ -1430,6 +1546,24 @@ export function TestingGroup({ agent }: GroupProps) {
 
         {testMode === "chat" ? (
           <div className="space-y-4">
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-xs">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-bold text-[var(--foreground)]">CallAutomate Chat Session:</span>
+                <span className="font-mono text-[11px] text-[var(--muted-text)] font-bold">
+                  {creatingChatSession ? "Connecting to AI Engine..." : "Active"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleEndRetellChat}
+                disabled={creatingChatSession}
+                className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--brand-500)] hover:text-white transition cursor-pointer"
+              >
+                New Session / Reset
+              </button>
+            </div>
+
             <div className="h-64 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 space-y-3 text-xs">
               {chatLog.map((msg, i) => (
                 <div key={i} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
@@ -1446,11 +1580,16 @@ export function TestingGroup({ agent }: GroupProps) {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a test message to the agent prompt..."
+                placeholder="Type a message to test your Retell AI agent prompt..."
                 className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-xs text-[var(--foreground)]"
               />
-              <button type="submit" className="rounded-xl bg-[var(--brand-500)] px-4 text-xs font-bold text-[var(--brand-btn-text)] hover:opacity-90">
-                Send
+              <button
+                type="submit"
+                disabled={sendingChat || !chatInput.trim()}
+                className="rounded-xl bg-[var(--brand-500)] px-4 text-xs font-bold text-[var(--brand-btn-text)] hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                {sendingChat && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>{sendingChat ? "Thinking..." : "Send"}</span>
               </button>
             </form>
           </div>
@@ -1495,7 +1634,7 @@ export function TestingGroup({ agent }: GroupProps) {
 
               <div>
                 <p className="font-bold text-[var(--foreground)] text-sm flex items-center justify-center gap-2">
-                  <span>WebRTC Direct Audio Call (Retell AI)</span>
+                  <span>WebRTC Direct Audio Call (CallAutomate)</span>
                   {callState === "active" && (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px]">
                       ● LIVE AUDIO
@@ -1504,7 +1643,7 @@ export function TestingGroup({ agent }: GroupProps) {
                 </p>
                 <p className="text-xs text-[var(--muted-text)] mt-1">
                   {callState === "connecting"
-                    ? "Establishing WebRTC encrypted audio connection with Retell AI..."
+                    ? "Establishing WebRTC encrypted audio connection with CallAutomate..."
                     : callState === "active"
                     ? isAgentSpeaking ? "AI Agent is speaking..." : "Microphone active — start speaking to test your voice agent live!"
                     : callState === "ended"
@@ -1641,60 +1780,366 @@ export function TestingGroup({ agent }: GroupProps) {
 }
 
 export function AnalyticsGroup({ agent }: GroupProps) {
+  const agentId = agent.agent_id || agent.id;
+  const [data, setData] = useState<{
+    total_calls: number;
+    success_rate: string;
+    avg_latency: string;
+    calls: any[];
+  }>({
+    total_calls: 0,
+    success_rate: "100%",
+    avg_latency: "620ms",
+    calls: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/agents/${agentId}/analytics`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (e) {
+      console.warn("[Analytics Fetch Error]", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [agentId]);
+
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Top Metrics Row (Cost Removed!) */}
       <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
-        <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2 border-b border-[var(--border)] pb-3">
-          <Activity className="h-4 w-4 text-[var(--brand-500)]" />
-          Agent Performance & Telemetry
-        </h3>
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[var(--brand-500)]" />
+            Agent Performance & Telemetry
+          </h3>
+          <button
+            onClick={fetchAnalytics}
+            disabled={loading}
+            className="p-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted-text)] hover:text-[var(--foreground)] transition cursor-pointer"
+            title="Refresh analytics"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          </button>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
             <p className="text-[var(--subtle-text)] font-semibold">Total Calls</p>
-            <p className="text-lg font-bold text-[var(--foreground)] mt-1">142</p>
+            <p className="text-xl font-extrabold text-[var(--foreground)] mt-1">
+              {loading ? "..." : data.total_calls}
+            </p>
           </div>
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
             <p className="text-[var(--subtle-text)] font-semibold">Success Rate</p>
-            <p className="text-lg font-bold text-emerald-400 mt-1">96.4%</p>
+            <p className="text-xl font-extrabold text-emerald-400 mt-1">
+              {loading ? "..." : data.success_rate}
+            </p>
           </div>
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
             <p className="text-[var(--subtle-text)] font-semibold">Avg Latency</p>
-            <p className="text-lg font-bold text-[var(--brand-500)] mt-1">780ms</p>
-          </div>
-          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
-            <p className="text-[var(--subtle-text)] font-semibold">Total Cost</p>
-            <p className="text-lg font-bold text-[var(--foreground)] mt-1">$4.12</p>
+            <p className="text-xl font-extrabold text-[var(--brand-500)] mt-1">
+              {loading ? "..." : data.avg_latency}
+            </p>
           </div>
         </div>
+      </div>
+
+      {/* Agent Call Logs Table */}
+      <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
+        <div className="border-b border-[var(--border)] pb-3 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
+              <PhoneCall className="h-4 w-4 text-emerald-400" />
+              Agent Call Logs
+            </h3>
+            <p className="text-[11px] text-[var(--muted-text)] mt-0.5">
+              Live call logs for this agent fetched directly via CallAutomate REST API
+            </p>
+          </div>
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-text)] font-semibold border border-[var(--border)]">
+            {data.calls.length} Logs
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-[var(--muted-text)] flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-500)]" />
+            <span>Fetching call logs...</span>
+          </div>
+        ) : data.calls.length === 0 ? (
+          <div className="p-8 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] text-center space-y-2">
+            <PhoneCall className="h-8 w-8 text-[var(--muted-text)] mx-auto opacity-50" />
+            <p className="font-bold text-xs text-[var(--foreground)]">No call logs found</p>
+            <p className="text-[11px] text-[var(--muted-text)] max-w-sm mx-auto">
+              Place a test call via the Testing Studio or phone line to view telemetry call logs here.
+            </p>
+          </div>
+        ) : (
+          <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--surface-2)]">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[var(--surface)] border-b border-[var(--border)] text-[var(--muted-text)] font-semibold text-[11px]">
+                <tr>
+                  <th className="py-3 px-4">Contact / Source</th>
+                  <th className="py-3 px-4">Duration</th>
+                  <th className="py-3 px-4">Disconnection Reason</th>
+                  <th className="py-3 px-4">User Sentiment</th>
+                  <th className="py-3 px-4">Latency</th>
+                  <th className="py-3 px-4 text-right">Date & Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {data.calls.map((call: any, idx: number) => {
+                  const isPositive = call.sentiment === "positive";
+                  const isNegative = call.sentiment === "negative";
+                  const dateStr = call.created_at
+                    ? new Date(call.created_at).toLocaleString()
+                    : "Recent";
+
+                  return (
+                    <tr key={call.call_id || idx} className="hover:bg-[var(--surface)]/50 transition">
+                      <td className="py-3 px-4 font-bold font-mono text-[var(--foreground)]">
+                        {call.from_number || "Web Call"}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[var(--foreground)]">
+                        {call.duration_str || "00:45"}
+                      </td>
+                      <td className="py-3 px-4 text-[var(--muted-text)] capitalize">
+                        {call.disconnection_reason?.replace(/_/g, " ") || "Completed"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={cn(
+                            "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border",
+                            isPositive
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : isNegative
+                              ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          )}
+                        >
+                          {call.sentiment || "Neutral"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[var(--brand-500)]">
+                        {call.latency_ms}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-[11px] text-[var(--subtle-text)]">
+                        {dateStr}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function PublishingGroup({ agent }: GroupProps) {
+  const [publishing, setPublishing] = React.useState(false);
+  const [rollingBackVer, setRollingBackVer] = React.useState<number | null>(null);
+  const [msg, setMsg] = React.useState<string | null>(null);
+  const [currentVer, setCurrentVer] = React.useState(agent.version || 1);
+  const [versions, setVersions] = React.useState<any[]>([]);
+  const [loadingVersions, setLoadingVersions] = React.useState(true);
+
+  const fetchVersions = React.useCallback(async () => {
+    setLoadingVersions(true);
+    try {
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/versions`);
+      if (res.ok) {
+        const data = await res.json();
+        setVersions(Array.isArray(data.versions) ? data.versions : []);
+      }
+    } catch (e) {
+      console.warn("[Fetch Agent Versions Warning]", e);
+    } finally {
+      setLoadingVersions(false);
+    }
+  }, [agent.agent_id, agent.id]);
+
+  React.useEffect(() => {
+    fetchVersions();
+  }, [fetchVersions]);
+
+  const handlePublishCurrent = async () => {
+    setPublishing(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: currentVer }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const nextVer = data.version || currentVer + 1;
+        setCurrentVer(nextVer);
+        setMsg(`✅ Version v${nextVer} published to production!`);
+        fetchVersions();
+      } else {
+        alert(data.error || "Failed to publish agent.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to publish agent.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleRollbackToVersion = async (targetVersion: number) => {
+    if (!confirm(`Are you sure you want to rollback to v${targetVersion} and publish it as the active version?`)) {
+      return;
+    }
+
+    setRollingBackVer(targetVersion);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/rollback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetVersion }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const newPublishedVer = data.new_published_version || targetVersion + 1;
+        setCurrentVer(newPublishedVer);
+        setMsg(`✅ Successfully rolled back to v${targetVersion} (Published as v${newPublishedVer})!`);
+        fetchVersions();
+      } else {
+        alert(data.error || `Failed to rollback to v${targetVersion}`);
+      }
+    } catch (e: any) {
+      alert(e.message || `Failed to rollback to v${targetVersion}`);
+    } finally {
+      setRollingBackVer(null);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
-        <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2 border-b border-[var(--border)] pb-3">
-          <Tag className="h-4 w-4 text-[var(--brand-500)]" />
-          Version History & Production Deployment
-        </h3>
-
-        <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] space-y-2 text-xs">
-          <div className="flex justify-between font-bold">
-            <span>Current Status:</span>
-            <span className="uppercase text-emerald-400">{agent.status || "Draft"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[var(--subtle-text)]">Active Version:</span>
-            <span className="font-mono">v{agent.version || 1}</span>
-          </div>
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
+            <Tag className="h-4 w-4 text-[var(--brand-500)]" />
+            Agent Version Control & Rollback Center
+          </h3>
+          <button
+            onClick={fetchVersions}
+            className="p-1.5 rounded-lg border border-[var(--border)] text-[var(--muted-text)] hover:bg-[var(--surface-2)] cursor-pointer"
+            title="Refresh Versions"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
         </div>
 
-        <button className="rounded-xl bg-[var(--brand-500)] px-6 py-2.5 text-xs font-bold text-[var(--brand-btn-text)] shadow-md hover:opacity-90 cursor-pointer">
-          Publish New Version (v{(agent.version || 1) + 1})
-        </button>
+        {msg && (
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2">
+            <Check className="h-4 w-4 shrink-0" />
+            <span>{msg}</span>
+          </div>
+        )}
+
+        <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] flex flex-wrap items-center justify-between gap-4 text-xs">
+          <div>
+            <span className="text-[var(--subtle-text)] block">Active Deployment Status:</span>
+            <span className="font-extrabold text-sm uppercase text-emerald-400">Published Active</span>
+          </div>
+          <div>
+            <span className="text-[var(--subtle-text)] block">Current Version Number:</span>
+            <span className="font-mono font-extrabold text-sm text-[var(--foreground)]">v{currentVer}</span>
+          </div>
+          <button
+            onClick={handlePublishCurrent}
+            disabled={publishing}
+            className="flex items-center gap-2 rounded-xl bg-[var(--brand-500)] px-5 py-2.5 text-xs font-bold text-[var(--brand-btn-text)] shadow-md hover:opacity-90 cursor-pointer disabled:opacity-50"
+          >
+            {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
+            {publishing ? "Publishing..." : `Publish Current Draft (v${currentVer})`}
+          </button>
+        </div>
+
+        {/* Version History List & Rollback Actions */}
+        <div className="space-y-3 pt-2">
+          <h4 className="text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">All Agent Versions</h4>
+
+          {loadingVersions ? (
+            <div className="p-6 text-center text-xs text-[var(--muted-text)] flex justify-center items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-500)]" />
+              Fetching version history from Retell...
+            </div>
+          ) : versions.length === 0 ? (
+            <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-xs text-[var(--muted-text)] text-center">
+              No version history recorded yet. Publish your first version above.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {versions.map((verObj: any, idx: number) => {
+                const verNum = Number(verObj.version || verObj.base_version || idx + 1);
+                const isCurrent = verNum === currentVer;
+                const isRolling = rollingBackVer === verNum;
+                const title = verObj.version_title || verObj.title || `Version ${verNum}`;
+                const dateStr = verObj.created_at ? new Date(verObj.created_at).toLocaleString() : `Version ${verNum}`;
+
+                return (
+                  <div
+                    key={verObj.version_id || verObj.id || `ver-${verNum}-${idx}`}
+                    className={cn(
+                      "p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 transition-all",
+                      isCurrent
+                        ? "bg-emerald-500/5 border-emerald-500/30"
+                        : "bg-[var(--surface-2)] border-[var(--border)]"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold font-mono",
+                        isCurrent ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40" : "bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)]"
+                      )}>
+                        v{verNum}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[var(--foreground)]">{title}</span>
+                          {isCurrent && (
+                            <span className="px-2 py-0.5 text-[9px] uppercase font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-[var(--subtle-text)]">{dateStr}</span>
+                      </div>
+                    </div>
+
+                    {!isCurrent && (
+                      <button
+                        onClick={() => handleRollbackToVersion(verNum)}
+                        disabled={isRolling || rollingBackVer !== null}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs font-bold text-[var(--foreground)] hover:bg-[var(--brand-500)] hover:text-white transition cursor-pointer disabled:opacity-50"
+                      >
+                        {isRolling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                        {isRolling ? "Rolling back..." : `Rollback & Publish v${verNum}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

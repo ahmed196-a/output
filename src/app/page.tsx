@@ -52,17 +52,19 @@ export default function Home() {
     const sectionIds = ["live-demo", "pricing", "features", "how-it-works", "booking"];
 
     if (sectionIds.includes(view)) {
+      const el = document.getElementById(view);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       if (currentView !== "home") {
         setCurrentView("home");
         setTimeout(() => {
           const el = document.getElementById(view);
           if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 150);
-      } else {
-        const el = document.getElementById(view);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
       }
-      return;
     }
 
     setCurrentView(view as LandingView);
@@ -100,7 +102,10 @@ export default function Home() {
               data={industryData}
               onDemoClick={() => handleNavigate("live-demo")}
             />
-            <LiveDemo />
+            <LiveDemo
+              filterIndustryId={industryData.id}
+              colorTheme={industryData.colorTheme}
+            />
             <div className="bg-white border-t border-slate-200">
               <LandingPricing />
               <BookingCalendar />

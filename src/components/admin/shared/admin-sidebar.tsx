@@ -21,6 +21,7 @@ import { useAdminRole } from "@/hooks/admin/use-admin-role";
 import { AdminNavPermission } from "@/types/admin/roles";
 import { useUIStore } from "@/store/ui-store";
 import { LogoutButton } from "@/components/shared/logout-button";
+import { CallAutomateLogoIcon } from "@/components/shared/call-automate-logo";
 
 type AdminNavItem = {
   href: string;
@@ -67,20 +68,13 @@ export function AdminSidebar() {
         {/* Logo and Close Button */}
         <div className="flex h-16 items-center justify-between gap-2.5 px-6 border-b border-sidebar-border" style={{ borderColor: "var(--sidebar-border)" }}>
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0"
-              style={{
-                background: "linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 100%)",
-                boxShadow: "0 2px 6px rgba(37, 99, 235, 0.2)"
-              }}
-            >
-              <ShieldCheck className="h-4 w-4 text-white" />
-            </div>
+            <CallAutomateLogoIcon className="w-7 h-7 shrink-0" size={28} />
             <span
-              className="text-base font-bold text-[var(--sidebar-text-hover)] tracking-wider uppercase"
+              className="text-base font-extrabold text-[var(--sidebar-text-hover)] tracking-tight"
               style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
-              Admin<span className="text-[var(--brand-500)]">Panel</span>
+              Call<span className="text-[var(--brand-500)]">Automate</span>
+              <span className="ml-1 text-[10px] uppercase font-bold text-amber-500 border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 rounded">Admin</span>
             </span>
           </div>
 
@@ -147,9 +141,7 @@ export function AdminSidebar() {
           </div>
 
           <div className="flex items-center gap-2.5 relative z-10">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-500)] text-white text-xs font-bold shadow-sm">
-              N
-            </div>
+            <CallAutomateLogoIcon className="w-6 h-6 shrink-0" size={24} />
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--sidebar-text)] font-sans">Powered by</p>
               <p className="text-xs font-bold text-[var(--sidebar-text-hover)] truncate font-sans">CallAutomate</p>

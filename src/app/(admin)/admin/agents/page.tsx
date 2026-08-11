@@ -3,19 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Bot, Users, UserCheck, Loader2, Search, RefreshCw, UserMinus } from "lucide-react";
+import { AgentsTable } from "@/components/agents/AgentsTable";
 
 interface AdminAgentItem {
   id: string;
   agent_id: string;
   agent_name: string;
   voice_id: string;
-  language: string;
+  language?: string;
   begin_message?: string;
   general_prompt?: string;
-  created_at?: number;
+  created_at?: number | string;
   userId?: string | null;
-  userEmail: string;
-  userName: string;
+  userEmail?: string;
+  userName?: string;
 }
 
 interface UserOption {
@@ -99,10 +100,10 @@ export default function AdminAgentsPage() {
 
   const filteredAgents = agents.filter(
     (a) =>
-      a.agent_name.toLowerCase().includes(search.toLowerCase()) ||
-      a.agent_id.toLowerCase().includes(search.toLowerCase()) ||
-      a.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-      a.userName.toLowerCase().includes(search.toLowerCase())
+      (a.agent_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (a.agent_id || "").toLowerCase().includes(search.toLowerCase()) ||
+      (a.userEmail || "").toLowerCase().includes(search.toLowerCase()) ||
+      (a.userName || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -131,96 +132,17 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
-      <div className="premium-table-container">
-        <table className="premium-table">
-          <thead>
-            <tr>
-              <th>Agent Name & ID</th>
-              <th>Voice Engine</th>
-              <th>Owner User</th>
-              <th>Greeting Preview</th>
-              <th>Created Date</th>
-              <th>Admin Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-500)] mx-auto" />
-                </td>
-              </tr>
-            ) : filteredAgents.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-[var(--muted-text)] text-sm">
-                  No voice agents found.
-                </td>
-              </tr>
-            ) : (
-              filteredAgents.map((a) => (
-                <tr key={a.id || a.agent_id}>
-                  <td>
-                    <div>
-                      <div className="font-bold text-[var(--foreground)]">{a.agent_name}</div>
-                      <div className="text-[11px] font-mono text-[var(--subtle-text)]">{a.agent_id}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="px-2.5 py-1 text-xs rounded-full bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] font-medium">
-                      🎙️ {a.voice_id}
-                    </span>
-                  </td>
-                  <td>
-                    <div>
-                      <div className="font-semibold text-xs text-[var(--foreground)]">
-                        {a.userId ? a.userName : <span className="text-emerald-400 font-bold">🔓 Unassigned (Free)</span>}
-                      </div>
-                      <div className="text-[11px] text-[var(--subtle-text)]">{a.userId ? a.userEmail : "Available to assign"}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="text-xs text-[var(--muted-text)] line-clamp-1 italic">
-                      "{a.begin_message || "Hello! How can I help you?"}"
-                    </span>
-                  </td>
-                  <td className="text-xs text-[var(--muted-text)]">
-                    {a.created_at ? new Date(a.created_at).toLocaleDateString() : "Recent"}
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setReassignTargetAgent(a);
-                          setSelectedUserId(a.userId || "unassigned");
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-[var(--brand-500)] text-[var(--brand-btn-text)] text-xs font-semibold hover:opacity-90 cursor-pointer flex items-center gap-1"
-                      >
-                        <UserCheck className="h-3.5 w-3.5" />
-                        Reassign
-                      </button>
-
-                      {a.userId && (
-                        <button
-                          onClick={() => {
-                            if (confirm(`Free / Unassign agent "${a.agent_name}" from ${a.userEmail}?`)) {
-                              handleReassign(a, "unassigned");
-                            }
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-medium border border-red-500/20 cursor-pointer flex items-center gap-1"
-                          title="Unassign agent from user"
-                        >
-                          <UserMinus className="h-3.5 w-3.5" />
-                          Free
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Retell-styled All Agents Table for Admin */}
+      <AgentsTable
+        agents={agents}
+        loading={loading}
+        isAdmin={true}
+        onRefresh={fetchData}
+        onReassign={(agent) => {
+          setReassignTargetAgent(agent);
+          setSelectedUserId(agent.userId || "unassigned");
+        }}
+      />
 
       {/* REASSIGN / UNASSIGN AGENT MODAL */}
       {reassignTargetAgent && (

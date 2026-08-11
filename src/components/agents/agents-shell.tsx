@@ -18,7 +18,7 @@ import {
   Edit3, Copy, Shield, Cpu, Activity, Clock
 } from "lucide-react";
 import { RetellVoice, RetellPhoneNumberResponse, RetellKnowledgeBaseResponse, RetellCallResponse } from "@/types/retell";
-import { cn } from "@/lib/utils";
+import { AgentsTable } from "@/components/agents/AgentsTable";
 
 const PAGE_SIZE = 9;
 
@@ -28,15 +28,15 @@ export interface VoiceAgent {
   agent_name: string;
   provider?: string;
   voice_id: string;
-  language: string;
-  response_engine: { type: string; llm_id?: string; llm_websocket_url?: string; model?: string };
+  language?: string;
+  response_engine?: { type?: string; llm_id?: string; llm_websocket_url?: string; model?: string };
   begin_message?: string;
   general_prompt?: string;
-  phone_number?: string;
+  phone_number?: string | null;
   knowledge_base_ids?: string[];
   version?: number;
   status?: "published" | "draft";
-  created_at?: number;
+  created_at?: number | string;
   updated_at?: string;
   calls_today?: number;
   success_rate?: number;
@@ -178,23 +178,8 @@ export function AgentsShell() {
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => router.push("/agents/new")}
-            className="flex items-center gap-2 rounded-xl bg-[var(--brand-500)] px-4 py-2.5 text-xs font-bold text-[var(--brand-btn-text)] shadow-md hover:opacity-90 transition cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            Create Agent
-          </button>
         </div>
       </div>
-
-      {/* Top Overview Cards */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <StatCard label="My Voice Agents" value={String(agents.length)} />
-        <StatCard label="Published Agents" value={String(agents.filter((a) => a.status === "published").length)} />
-        <StatCard label="Active Calls Today" value={String(agents.reduce((acc, a) => acc + (a.calls_today || 0), 0))} />
-        <StatCard label="Avg Success Rate" value="94.8%" />
-      </section>
 
       {/* Filter Bar */}
       <FilterBar>
@@ -210,138 +195,14 @@ export function AgentsShell() {
         </div>
       </FilterBar>
 
-      {/* Rich At-a-Glance Agent Cards Grid */}
-      {paginatedAgents.length === 0 ? (
-        <EmptyState
-          title="No Voice Agents Found"
-          message="Click 'Create Agent' to set up your first AI voice agent."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {paginatedAgents.map((agent) => (
-            <div
-              key={agent.id}
-              className="group relative flex flex-col justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm transition-all duration-200 hover:border-[var(--brand-500)]/40 hover:shadow-lg"
-            >
-              <div>
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-2 border-b border-[var(--border-light)] pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-100)] text-[var(--brand-500)] font-bold">
-                      🎙️
-                    </div>
-                    <div>
-                      <h3
-                        onClick={() => router.push(`/agents/${agent.agent_id || agent.id}`)}
-                        className="font-bold text-[var(--foreground)] text-sm hover:text-[var(--brand-500)] transition cursor-pointer"
-                      >
-                        {agent.agent_name}
-                      </h3>
-                      <p className="text-[10px] font-mono text-[var(--subtle-text)] mt-0.5">
-                        {agent.agent_id}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border",
-                      agent.status === "published"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                    )}
-                  >
-                    {agent.status || "draft"}
-                  </span>
-                </div>
-
-                {/* Metadata Grid */}
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--subtle-text)] font-semibold">Engine & Voice</p>
-                    <p className="font-semibold text-[var(--foreground)] truncate flex items-center gap-1">
-                      <span className="px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[10px] uppercase font-bold text-[var(--brand-500)] border border-[var(--border)]">
-                        {agent.provider || "Retell"}
-                      </span>
-                      <span className="truncate">{agent.voice_id}</span>
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--subtle-text)] font-semibold">Phone Line</p>
-                    <p className="font-mono text-[var(--foreground)] font-semibold truncate">
-                      {agent.phone_number || "Unassigned"}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--subtle-text)] font-semibold">Knowledge & LLM</p>
-                    <p className="text-[var(--foreground)] font-semibold truncate flex items-center gap-1.5">
-                      <Database className="h-3 w-3 text-[var(--brand-500)]" />
-                      <span>{agent.knowledge_base_ids?.length || 0} KB</span>
-                      <span>·</span>
-                      <span className="font-mono">{agent.response_engine?.model || "GPT-4o"}</span>
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--subtle-text)] font-semibold">Daily Metrics</p>
-                    <p className="text-[var(--foreground)] font-semibold flex items-center gap-1.5">
-                      <Activity className="h-3 w-3 text-emerald-400" />
-                      <span>{agent.calls_today} Calls</span>
-                      <span className="text-emerald-400">({agent.success_rate}%)</span>
-                    </p>
-                  </div>
-                </div>
-
-                {agent.begin_message && (
-                  <p className="mt-3 text-xs text-[var(--subtle-text)] italic line-clamp-1">
-                    &ldquo;{agent.begin_message}&rdquo;
-                  </p>
-                )}
-              </div>
-
-              {/* Action Toolbar */}
-              <div className="mt-5 flex items-center justify-between border-t border-[var(--border-light)] pt-3 text-xs">
-                <button
-                  onClick={() => router.push(`/agents/${agent.agent_id || agent.id}`)}
-                  className="flex items-center gap-1.5 rounded-lg bg-[var(--brand-500)] px-3 py-1.5 font-bold text-[var(--brand-btn-text)] hover:opacity-90 transition cursor-pointer"
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  Edit Agent
-                </button>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleStartWebTest(agent)}
-                    className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 font-semibold text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
-                    title="Browser WebRTC Audio Test"
-                  >
-                    <PhoneCall className="h-3.5 w-3.5" />
-                    Test
-                  </button>
-
-                  <button
-                    onClick={() => handleDuplicate(agent)}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1.5 text-[var(--muted-text)] hover:text-[var(--foreground)] transition cursor-pointer"
-                    title="Duplicate Agent"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(agent.agent_id || agent.id)}
-                    className="rounded-lg border border-red-500/20 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition cursor-pointer"
-                    title="Delete Agent"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Retell-styled All Agents Table */}
+      <AgentsTable
+        agents={agents}
+        loading={isLoading}
+        onRefresh={fetchUserAgents}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
+      />
 
       <PaginationControls
         page={page}

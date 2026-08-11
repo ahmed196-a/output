@@ -1,6 +1,7 @@
 "use client";
 
 import { Mic, Zap, Shield, Globe, Clock, BarChart3, Bot, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -35,11 +36,20 @@ const features = [
   },
 ];
 
+const getCardDelay = (i: number) => i * 0.1;
+
+
 export function LandingFeatures() {
   return (
     <section id="features" className="py-24 bg-slate-50/70 border-y border-slate-200/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Platform Capabilities</span>
@@ -50,20 +60,31 @@ export function LandingFeatures() {
           <p className="text-slate-600 text-lg">
             Purpose-built voice AI technology for high-volume customer interactions.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((f, i) => (
-            <div
+            <motion.div
               key={i}
-              className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.5, delay: getCardDelay(i), ease: "easeOut" }}
+              whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.1)" }}
+              className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm transition-all duration-300"
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mb-6">
+              <motion.div
+                initial={{ rotate: -15, scale: 0 }}
+                whileInView={{ rotate: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 + 0.2, type: "spring", stiffness: 200 }}
+                className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mb-6"
+              >
                 <f.icon className="w-6 h-6" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">{f.title}</h3>
               <p className="text-slate-600 text-sm leading-relaxed">{f.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

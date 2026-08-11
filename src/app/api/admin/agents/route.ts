@@ -1,13 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRequestJwt, requireRole } from '@/lib/jwt-auth';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { listRetellAgents, getRetellAgent } from '@/lib/retell-api';
+import { listRetellAgents, listRetellPhoneNumbers, getRetellAgent } from '@/lib/retell-api';
 
 export async function GET(req: NextRequest) {
   try {
     const payload = await verifyRequestJwt(req);
     if (!payload || !requireRole(payload, ['super_admin', 'admin', 'operations'])) {
       return NextResponse.json({ message: 'Unauthorized. Admin access required.' }, { status: 403 });
+    }
+
+    // Fetch phone numbers to build agent_id -> phone_number map
+    const phoneMap = new Map<string, string>();
+    try {
+      const phoneNumbers = await listRetellPhoneNumbers({ skipCache: true });
+      (phoneNumbers || []).forEach((p: any) => {
+        const numStr = p.phone_number_pretty || p.phone_number;
+        if (p.inbound_agents) {
+          p.inbound_agents.forEach((a: any) => {
+            if (a.agent_id) phoneMap.set(a.agent_id, numStr);
+          });
+        }
+        if (p.outbound_agents) {
+          p.outbound_agents.forEach((a: any) => {
+            if (a.agent_id) phoneMap.set(a.agent_id, numStr);
+          });
+        }
+        if (p.inbound_agent_id) phoneMap.set(p.inbound_agent_id, numStr);
+        if (p.outbound_agent_id) phoneMap.set(p.outbound_agent_id, numStr);
+      });
+    } catch (e) {
+      console.warn('[Admin agents phone map warning]', e);
     }
 
     const retellApiAgents = await listRetellAgents();
@@ -57,7 +80,9 @@ export async function GET(req: NextRequest) {
         response_engine: { type: a.response_engine || 'retell-llm', llm_websocket_url: a.llm_websocket_url },
         begin_message: a.begin_message,
         general_prompt: a.general_prompt,
+        phone_number: phoneMap.get(retellId) || null,
         created_at: new Date(a.created_at).getTime(),
+        last_modification_timestamp: new Date(a.created_at).getTime(),
         userId: a.created_by,
         userEmail: a.users?.email || (a.created_by ? 'Unknown User' : 'Unassigned / Free Agent'),
         userName: a.users?.full_name || (a.created_by ? 'System User' : 'Unassigned'),
@@ -66,17 +91,20 @@ export async function GET(req: NextRequest) {
 
     // 2. Add any live Retell API agents that might not be in DB yet
     (Array.isArray(retellApiAgents) ? retellApiAgents : []).forEach((r: any) => {
-      if (!allAgentsMap.has(r.agent_id)) {
-        allAgentsMap.set(r.agent_id, {
-          id: r.agent_id,
-          agent_id: r.agent_id,
+      const agentId = r.agent_id;
+      if (agentId && !allAgentsMap.has(agentId)) {
+        allAgentsMap.set(agentId, {
+          id: agentId,
+          agent_id: agentId,
           agent_name: r.agent_name || 'Voice Agent',
           voice_id: r.voice_id || 'retell-Cimo',
           language: r.language || 'en-US',
           response_engine: r.response_engine || { type: 'retell-llm' },
           begin_message: r.begin_message || '',
           general_prompt: r.general_prompt || '',
+          phone_number: phoneMap.get(agentId) || null,
           created_at: r.created_at || Date.now(),
+          last_modification_timestamp: r.last_modification_timestamp || r.created_at || Date.now(),
           userId: null,
           userEmail: 'Unassigned / Free Agent',
           userName: 'Unassigned',

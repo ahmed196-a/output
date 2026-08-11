@@ -367,7 +367,7 @@ export default function PhoneNumbersPage() {
 
       <PageHeader
         title="Phone Numbers"
-        description="Search, purchase, and assign Telnyx phone numbers to your Retell AI voice agents."
+        description="Search, purchase, and assign phone numbers to your CallAutomate voice agents."
       />
 
       {/* Tabs Bar */}
@@ -503,7 +503,7 @@ export default function PhoneNumbersPage() {
                   <tr>
                     <td colSpan={6} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-500)] mx-auto" />
-                      <span className="text-xs text-[var(--muted-text)] mt-2 block">Searching available Telnyx numbers...</span>
+                      <span className="text-xs text-[var(--muted-text)] mt-2 block">Searching available numbers...</span>
                     </td>
                   </tr>
                 ) : searchResults.length === 0 ? (
@@ -565,7 +565,7 @@ export default function PhoneNumbersPage() {
                 <th>Country</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Assigned Retell Voice Agent</th>
+                <th>Assigned CallAutomate Voice Agent</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -766,7 +766,7 @@ export default function PhoneNumbersPage() {
             </div>
 
             <div>
-              <label className="form-label">Assign to Retell Voice Agent (Optional)</label>
+              <label className="form-label">Assign to CallAutomate Voice Agent (Optional)</label>
               <select
                 value={selectedAgentForCheckout}
                 onChange={(e) => setSelectedAgentForCheckout(e.target.value)}

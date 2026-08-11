@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { phoneNumber, customerReference, userId: bodyUserId } = body;
+    const { phoneNumber, customerReference, userId: bodyUserId, cost } = body;
 
     if (!phoneNumber) {
       return NextResponse.json({ message: 'phoneNumber is required' }, { status: 400 });
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     // Assign to specified user if admin, fallback to current session user
     const finalUserId = (isAdmin && bodyUserId) ? bodyUserId : userId;
 
-    if (isTelnyxConfigured() && finalUserId) {
+    if (finalUserId) {
       try {
         const supabase = createServerSupabaseClient();
         await supabase.from('phone_orders').insert({
@@ -111,8 +111,47 @@ export async function POST(req: NextRequest) {
           requirements_met: order.requirementsMet,
           sub_order_ids: order.subOrderIds || [],
         });
+
+        // Also record in phone_numbers table for immediate user display
+        await supabase.from('phone_numbers').upsert(
+          {
+            user_id: finalUserId,
+            phone_number: phoneNumber,
+            status: order.status === 'success' ? 'active' : 'pending',
+            country_code: phoneNumber.startsWith('+44') ? 'GB' : phoneNumber.startsWith('+49') ? 'DE' : 'US',
+            type: 'local',
+            capabilities: { voice: true, sms: true },
+          },
+          { onConflict: 'phone_number' }
+        );
+
+        // Create an Invoice entry for Billing section display
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('email, full_name')
+          .eq('id', finalUserId)
+          .single();
+
+        const itemCost = typeof cost === 'number' && cost > 0 ? cost : 2.50;
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setDate(periodEnd.getDate() + 30);
+
+        await supabase.from('invoices').insert({
+          user_id: finalUserId,
+          invoice_number: `INV-TEL-${Math.floor(100000 + Math.random() * 900000)}`,
+          plan_name: `Phone Number (${phoneNumber})`,
+          type: 'phone_number',
+          amount: itemCost,
+          status: 'pending',
+          billing_name: userRecord?.full_name || 'Customer',
+          billing_email: userRecord?.email || '',
+          period_start: now.toISOString(),
+          period_end: periodEnd.toISOString(),
+          created_at: now.toISOString(),
+        });
       } catch (e) {
-        console.warn('[Orders DB Insert Warning]', e);
+        console.warn('[Orders & Invoice DB Insert Warning]', e);
       }
     }
 

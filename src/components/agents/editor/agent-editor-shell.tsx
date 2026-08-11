@@ -55,6 +55,44 @@ export function AgentEditorShell({ agent: initialAgent }: AgentEditorShellProps)
     }
   };
 
+  const [publishing, setPublishing] = useState(false);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+
+  const handlePublishAgent = async () => {
+    setPublishing(true);
+    setPublishMessage(null);
+    try {
+      const res = await fetch(`/api/agents/${agent.agent_id || agent.id}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version: agent.version || 1,
+          version_title: `v${agent.version || 1}.0`,
+          version_description: "Published from CallAutomate Agent Editor",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const publishedVer = data.version || (agent.version ? agent.version + 1 : 2);
+        setPublishMessage(`v${publishedVer} Published!`);
+        setAgent((prev: any) => ({
+          ...prev,
+          version: publishedVer,
+          is_active: true,
+          status: "published",
+        }));
+        setTimeout(() => setPublishMessage(null), 4000);
+      } else {
+        alert(data.error || "Failed to publish agent.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to publish agent.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const navItems = [
     { id: "overview", label: "Overview", icon: Bot, desc: "General, Prompting & Voice Engine" },
     { id: "intelligence", label: "Intelligence", icon: Database, desc: "Knowledge RAG & LLM Models" },
@@ -83,21 +121,27 @@ export function AgentEditorShell({ agent: initialAgent }: AgentEditorShellProps)
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-[var(--foreground)] text-base">{agent.name || agent.agent_name || "Voice Agent"}</h1>
               <span className="px-2 py-0.5 text-[10px] uppercase font-bold rounded-full bg-[var(--surface-2)] text-[var(--brand-500)] border border-[var(--border)]">
-                {agent.provider || agent.config?.general?.provider || "Retell"}
+                {agent.provider === "retell" || !agent.provider ? "CallAutomate" : agent.provider}
               </span>
               <span className={cn(
                 "px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border",
                 agent.version && agent.version > 1 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
               )}>
-                {agent.version && agent.version > 1 ? "Published" : "Draft"}
+                {agent.version && agent.version > 1 ? `Published (v${agent.version})` : "Draft"}
               </span>
             </div>
-            <p className="text-[10px] font-mono text-[var(--subtle-text)] mt-0.5">{agent.agent_id || agent.id}</p>
           </div>
         </div>
 
         {/* Sectional Autosave Status & Global Controls */}
         <div className="flex items-center gap-3">
+          {publishMessage && (
+            <span className="px-3 py-1 text-xs font-bold rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse flex items-center gap-1">
+              <Check className="h-3.5 w-3.5" />
+              {publishMessage}
+            </span>
+          )}
+
           {Object.entries(sectionStatus).map(([sec, st]) => (
             <span key={sec} className="text-[11px] font-medium flex items-center gap-1 text-[var(--muted-text)] bg-[var(--surface-2)] px-2.5 py-1 rounded-lg border border-[var(--border)]">
               <span className="capitalize">{sec}:</span>
@@ -106,6 +150,15 @@ export function AgentEditorShell({ agent: initialAgent }: AgentEditorShellProps)
               <span className="capitalize font-bold">{st}</span>
             </span>
           ))}
+
+          <button
+            onClick={handlePublishAgent}
+            disabled={publishing}
+            className="flex items-center gap-1.5 rounded-xl bg-[var(--brand-500)] text-[var(--brand-btn-text)] px-4 py-2 text-xs font-bold shadow-md hover:opacity-90 transition cursor-pointer disabled:opacity-50"
+          >
+            {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Tag className="h-3.5 w-3.5" />}
+            {publishing ? "Publishing..." : "Publish Agent"}
+          </button>
 
           <button
             onClick={() => router.push("/agents")}
