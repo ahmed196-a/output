@@ -45,16 +45,57 @@ export function useDashboardOverviewQuery() {
           return;
         }
 
-        // ── Step 1: Resolve the assistant_id assigned to this user ────────────
-        const { data: assignmentRow, error: assignmentError } = await supabase
-          .from("user_assistant_assignments")
-          .select("assistant_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // ── Step 1: Resolve all agent IDs assigned to / owned by this user ────────────
+        const candidateIds = new Set<string>();
 
-        if (assignmentError) throw new Error(assignmentError.message);
+        try {
+          const { data: assignments } = await supabase
+            .from("user_assistant_assignments")
+            .select("assistant_id")
+            .eq("user_id", user.id);
+          (assignments || []).forEach((a: any) => { if (a.assistant_id) candidateIds.add(a.assistant_id); });
+        } catch (e) {}
 
-        if (!assignmentRow?.assistant_id) {
+        try {
+          const { data: accessRows } = await supabase
+            .from("user_agent_access")
+            .select("agent_id")
+            .eq("user_id", user.id);
+          (accessRows || []).forEach((a: any) => { if (a.agent_id) candidateIds.add(a.agent_id); });
+        } catch (e) {}
+
+        try {
+          const { data: ownedAgents } = await supabase
+            .from("agents")
+            .select("id, retell_agent_id")
+            .eq("created_by", user.id);
+          (ownedAgents || []).forEach((a: any) => {
+            if (a.id) candidateIds.add(a.id);
+            if (a.retell_agent_id) candidateIds.add(a.retell_agent_id);
+          });
+        } catch (e) {}
+
+        const finalAgentIds = new Set<string>(candidateIds);
+        try {
+          const { data: dbAgents } = await supabase
+            .from("agents")
+            .select("id, retell_agent_id, created_by");
+
+          (dbAgents || []).forEach((agent: any) => {
+            if (
+              agent.created_by === user.id ||
+              candidateIds.has(agent.id) ||
+              candidateIds.has(agent.retell_agent_id)
+            ) {
+              if (agent.id) finalAgentIds.add(agent.id);
+              if (agent.retell_agent_id) finalAgentIds.add(agent.retell_agent_id);
+            }
+          });
+        } catch (e) {}
+
+        const assignedIds = Array.from(finalAgentIds);
+
+        if (assignedIds.length === 0) {
           const today = new Date();
           const empty7Days = Array.from({ length: 7 }).map((_, i) => {
             const d = new Date(today);
@@ -79,13 +120,11 @@ export function useDashboardOverviewQuery() {
           return;
         }
 
-        const assignedAssistantId = assignmentRow.assistant_id;
-
-        // ── Step 2: Fetch CDRs scoped to assigned assistant ────────────────────
+        // ── Step 2: Fetch CDRs scoped to assigned assistants ────────────────────
         const { data: rows, error: err } = await cdrsSupabase
           .from("cdrs")
           .select("*")
-          .eq("assistant_id", assignedAssistantId)
+          .in("assistant_id", assignedIds)
           .order("start_datetime", { ascending: false });
 
         if (err) throw new Error(err.message);
